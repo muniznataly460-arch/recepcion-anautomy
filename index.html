@@ -1137,10 +1137,6 @@ function crearHojaCantidadFinalizada(){
   ws['!cols']=[{wch:20},{wch:16},{wch:8},{wch:16},{wch:22}];
   return ws;
 }
-  const ws=XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols']=[{wch:20},{wch:16},{wch:14},{wch:22}];
-  return ws;
-}
 
 window.exportCompleto=function(){const d=buildDatos(),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,crearHoja(d,false),'Reporte Completo');XLSX.utils.book_append_sheet(wb,crearHoja(d.filter(x=>x.estado!=='CUADRADO'),false),'Diferencias');XLSX.utils.book_append_sheet(wb,crearHojaCantidadFinalizada(),'Cantidad Finalizada');XLSX.utils.book_append_sheet(wb,crearResumen(d),'Resumen');XLSX.writeFile(wb,'recepcion_completa_'+new Date().toISOString().slice(0,10)+'.xlsx');};
 window.exportDiferencias=function(){const d=buildDatos().filter(x=>x.estado!=='CUADRADO'),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,crearHoja(d,false),'Diferencias');XLSX.utils.book_append_sheet(wb,crearHojaCantidadFinalizada(),'Cantidad Finalizada');XLSX.writeFile(wb,'diferencias_recepcion_'+new Date().toISOString().slice(0,10)+'.xlsx');};
@@ -1169,3 +1165,4 @@ window.mostrarMsg=mostrarMsg;
 </script>
 </body>
 </html>
+
