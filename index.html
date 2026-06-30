@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ANAUTOMY">
+<meta name="theme-color" content="#1a1a1a">
+<title>Recepción · ANAUTOMY</title>
+<link rel="manifest" href="manifest.json">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f0;color:#1a1a1a;min-height:100vh;min-height:100dvh;}
+.login-wrap{display:flex;flex-direction:column;justify-content:center;min-height:100vh;min-height:100dvh;padding:28px 20px;background:#f5f4f0;}
+.login-logo{font-size:26px;font-weight:700;letter-spacing:.07em;margin-bottom:6px;}.login-logo span{color:#f0a500;}
+.login-sub{font-size:13px;color:#888;margin-bottom:32px;}
+.role-btn{width:100%;padding:16px;margin-bottom:10px;border-radius:14px;border:1.5px solid #e0e0e0;cursor:pointer;text-align:left;background:#fff;display:flex;align-items:center;gap:14px;}
+.role-btn:active{transform:scale(.98);}
+.role-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.role-title{font-size:15px;font-weight:700;}
+.role-desc{font-size:12px;color:#888;margin-top:2px;}
+.lbl{font-size:11px;color:#777;font-weight:600;letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:5px;}
+.inp{width:100%;padding:13px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:16px;background:#fff;color:#1a1a1a;margin-bottom:10px;}
+.inp:focus{outline:none;border-color:#f0a500;}
+select.inp{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;}
+.hdr{background:#1a1a1a;color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.logo{font-size:14px;font-weight:700;letter-spacing:.08em;}.logo span{color:#f0a500;}
+.hdr-right{font-size:11px;color:#888;display:flex;align-items:center;gap:5px;}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#2e7d32;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.tabs{display:flex;background:#fff;border-bottom:1px solid #e5e5e5;position:sticky;top:48px;z-index:99;overflow-x:auto;}
+.tab{flex:1;min-width:55px;padding:11px 3px;font-size:11px;font-weight:600;border:none;background:none;cursor:pointer;color:#999;border-bottom:2px solid transparent;margin-bottom:-1px;text-align:center;white-space:nowrap;}
+.tab.active{color:#1a1a1a;border-bottom-color:#f0a500;}
+.nbadge{display:inline-block;background:#c62828;color:#fff;border-radius:10px;padding:1px 5px;font-size:10px;margin-left:2px;}
+.screen{display:none;padding:14px;max-width:600px;margin:0 auto;padding-bottom:80px;}
+.screen.active{display:block;}
+.card{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;border:1px solid #e8e8e8;}
+.card-title{font-size:12px;font-weight:700;margin-bottom:10px;color:#666;text-transform:uppercase;letter-spacing:.04em;display:flex;justify-content:space-between;align-items:center;}
+.btn{width:100%;padding:13px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;}
+.btn:active{opacity:.85;transform:scale(.99);}
+.btn-amber{background:#f0a500;color:#1a1a1a;}
+.btn-dark{background:#1a1a1a;color:#fff;}
+.btn-green{background:#2e7d32;color:#fff;}
+.btn-red{background:#c62828;color:#fff;}
+.btn-outline{background:#fff;color:#1a1a1a;border:1.5px solid #ddd;}
+.btn-sm{padding:7px 14px;font-size:12px;width:auto;margin-top:0;border-radius:8px;cursor:pointer;border:1.5px solid #ddd;background:#fff;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;}
+.stat{background:#fff;border-radius:10px;padding:10px 8px;text-align:center;border:1px solid #e8e8e8;}
+.stat-n{font-size:22px;font-weight:700;}
+.stat-l{font-size:10px;color:#888;margin-top:2px;}
+.col-ok{color:#2e7d32;}.col-err{color:#c62828;}.col-blue{color:#1565c0;}
+.sku-prev{border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px;font-weight:600;display:none;}
+.sku-prev.info{background:#e3f2fd;color:#1565c0;}
+.sku-prev.ok{background:#e8f5e9;color:#2e7d32;}
+.sku-prev.warn{background:#fff3e0;color:#e65100;}
+.rec-item{background:#fff;border-radius:10px;padding:12px 14px;margin-bottom:7px;border:1px solid #e8e8e8;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.rec-sku{font-size:13px;font-weight:700;}
+.rec-cat{font-size:11px;color:#888;margin-top:1px;}
+.rec-cant{font-size:18px;font-weight:700;}
+.badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;white-space:nowrap;}
+.b-ok{background:#e8f5e9;color:#2e7d32;}
+.b-over{background:#e3f2fd;color:#1565c0;}
+.b-short{background:#fdecea;color:#c62828;}
+.b-extra{background:#fff3e0;color:#e65100;}
+.b-pend{background:#f5f5f5;color:#999;}
+.btn-del{background:none;border:none;color:#ccc;font-size:18px;cursor:pointer;padding:2px 8px;}
+.cmp-item{background:#fff;border-radius:10px;padding:13px 14px;margin-bottom:8px;border:1px solid #e8e8e8;}
+.cmp-nums{display:flex;gap:12px;align-items:center;margin-top:8px;flex-wrap:wrap;}
+.cmp-num{text-align:center;}
+.cmp-num .n{font-size:19px;font-weight:700;}
+.cmp-num .l{font-size:10px;color:#888;margin-top:1px;}
+.tarima-badge{display:inline-flex;align-items:center;gap:4px;background:#1a1a1a;color:#f0a500;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;}
+.tarima-card{background:#fff;border-radius:10px;padding:13px 14px;margin-bottom:8px;border:1px solid #e8e8e8;}
+.progress-bar{height:4px;background:#f0f0f0;border-radius:2px;margin-top:8px;overflow:hidden;}
+.progress-fill{height:4px;background:#f0a500;border-radius:2px;transition:.4s;}
+.drop-zone{border:2px dashed #e0e0e0;border-radius:10px;padding:24px;text-align:center;cursor:pointer;background:#fafaf8;}
+.drop-zone:active{border-color:#f0a500;background:#fffbf0;}
+.msg{padding:10px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-top:6px;display:none;}
+.msg-ok{background:#e8f5e9;color:#2e7d32;}
+.msg-err{background:#fdecea;color:#c62828;}
+.exp-btn{width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;border:none;}
+.exp-amber{background:#f0a500;color:#1a1a1a;}
+.exp-dark{background:#1a1a1a;color:#fff;}
+.exp-out{background:#fff;color:#1a1a1a;border:1.5px solid #ddd;}
+.exp-green{background:#2e7d32;color:#fff;}
+.monitor-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.mon-stat{background:#fff;border-radius:10px;padding:10px;text-align:center;border:1px solid #e8e8e8;}
+.mon-n{font-size:24px;font-weight:700;}
+.mon-l{font-size:10px;color:#888;margin-top:2px;}
+.empty{text-align:center;padding:32px;color:#bbb;font-size:13px;}
+.resumen-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f0f0f0;font-size:13px;}
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:14px;}
+.spinner{width:36px;height:36px;border:3px solid #e0e0e0;border-top-color:#f0a500;border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading p{font-size:13px;color:#888;}
+.finalizar-banner{background:#fff;border:2px solid #2e7d32;border-radius:12px;padding:14px 16px;margin-bottom:10px;text-align:center;}
+.finalizar-banner p{font-size:12px;color:#888;margin-bottom:10px;}
+.fase-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;}
+.fase-conteo{background:#fff3e0;color:#e65100;}
+.fase-finalizado{background:#e8f5e9;color:#2e7d32;}
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading-screen">
+  <div class="spinner"></div>
+  <p>Conectando...</p>
+</div>
+
+<div id="login-screen" style="display:none;">
+  <div class="login-wrap">
+    <div class="login-logo">ANA<span>UTOMY</span></div>
+    <div class="login-sub">Sistema de recepción de mercancía</div>
+    <div id="login-step1">
+      <button class="role-btn" onclick="selectRole('supervisor')">
+        <div class="role-icon" style="background:#1a1a1a;color:#f0a500;">📊</div>
+        <div><div class="role-title">Supervisor</div><div class="role-desc">Carga pedidos, define tarimas, ve todo en tiempo real</div></div>
+      </button>
+      <button class="role-btn" onclick="selectRole('contador')">
+        <div class="role-icon" style="background:#e8f5e9;color:#2e7d32;">📦</div>
+        <div><div class="role-title">Contador</div><div class="role-desc">Registra las piezas de tu tarima asignada</div></div>
+      </button>
+    </div>
+    <div id="login-step2" style="display:none;">
+      <div id="login-form-sup">
+        <label class="lbl">Tu nombre</label>
+        <input class="inp" id="sup-nombre" type="text" placeholder="Ej. Ana García" autocomplete="off" onkeydown="if(event.key==='Enter')entrarSupervisor()"/>
+        <button class="btn btn-dark" onclick="entrarSupervisor()">Entrar como supervisor →</button>
+        <button class="btn btn-outline" onclick="backLogin()" style="margin-top:6px;">← Atrás</button>
+      </div>
+      <div id="login-form-cnt" style="display:none;">
+        <label class="lbl">Tu nombre</label>
+        <input class="inp" id="cnt-nombre" type="text" placeholder="Ej. Luis Martínez" autocomplete="off"/>
+        <label class="lbl">Tu tarima</label>
+        <select class="inp" id="cnt-tarima-sel"><option value="">— Cargando tarimas... —</option></select>
+        <div id="msg-login" class="msg msg-err"></div>
+        <button class="btn btn-amber" onclick="entrarContador()">Iniciar conteo →</button>
+        <button class="btn btn-outline" onclick="backLogin()" style="margin-top:6px;">← Atrás</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="main-app" style="display:none;">
+  <div class="hdr">
+    <div class="logo">ANA<span>UTOMY</span> · Recepción</div>
+    <div class="hdr-right">
+      <div class="sync-dot"></div>
+      <span id="hdr-user">—</span>
+      <span id="hdr-fase" class="fase-badge fase-conteo" style="margin-left:6px;">Conteo</span>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs-sup" style="display:none;">
+    <button class="tab active" onclick="showTab('s-pedido',this)">📂 Pedido</button>
+    <button class="tab" onclick="showTab('s-monitor',this)">📡 Monitor</button>
+    <button class="tab" onclick="showTab('s-comparar',this)">🔍 Dif. <span class="nbadge" id="nbadge" style="display:none">0</span></button>
+    <button class="tab" onclick="showTab('s-buscador',this)">🔎 Ubicar</button>
+    <button class="tab" onclick="showTab('s-exportar',this)">📥 Excel</button>
+  </div>
+
+  <div class="tabs" id="tabs-cnt" style="display:none;">
+    <button class="tab active" onclick="showTab('s-captura',this)">📦 Captura</button>
+    <button class="tab" onclick="showTab('s-mis',this)">📋 Mi tarima</button>
+  </div>
+
+  <!-- PEDIDO -->
+  <div id="s-pedido" class="screen active">
+    <div class="card">
+      <div class="card-title">Cargar pedido esperado</div>
+      <p style="font-size:12px;color:#888;margin-bottom:12px;">Sube el Excel o CSV con columnas <strong>SKU</strong>, <strong>CANTIDAD</strong> y opcionalmente <strong>CVE FAMILIA</strong>.</p>
+      <div class="drop-zone" onclick="document.getElementById('file-inp').click()">
+        <div style="font-size:32px;">📋</div>
+        <p style="font-size:13px;color:#888;margin-top:6px;">Toca para seleccionar archivo</p>
+      </div>
+      <input type="file" id="file-inp" accept=".csv,.xlsx,.xls" style="display:none;" onchange="cargarArchivo(event)"/>
+      <div id="msg-import" class="msg msg-ok"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        Agregar SKU manualmente
+        <button class="btn-sm" onclick="limpiarTodo()" style="color:#c62828;border-color:#c62828;">🗑 Limpiar todo</button>
+      </div>
+      <label class="lbl">Código SKU</label>
+      <input class="inp" type="text" id="inp-sku-ped" placeholder="Ej. BV002i" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" onkeydown="if(event.key==='Enter')document.getElementById('inp-cant-ped').focus()"/>
+      <div class="g2">
+        <div><label class="lbl">Cantidad esperada</label><input class="inp" type="number" id="inp-cant-ped" placeholder="0" min="1" inputmode="numeric" style="font-size:22px;font-weight:700;text-align:center;" onkeydown="if(event.key==='Enter')agregarPedido()"/></div>
+        <div style="display:flex;align-items:flex-end;"><button class="btn btn-dark" onclick="agregarPedido()" style="margin-top:0;">+ Agregar</button></div>
+      </div>
+      <div id="msg-ped" class="msg msg-err"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        Tarimas del pedido
+        <span id="tarimas-count" style="font-size:11px;color:#888;font-weight:400;">0 tarimas</span>
+      </div>
+      <label class="lbl">Crear tarimas nuevas (se agregan a las existentes)</label>
+      <div class="g2">
+        <input class="inp" type="number" id="inp-num-tarimas" placeholder="Ej. 5" min="1" max="99" inputmode="numeric"/>
+        <button class="btn btn-amber" onclick="agregarTarimas()" style="margin-top:0;">+ Agregar tarimas</button>
+      </div>
+      <div id="lista-tarimas-sup" style="margin-top:8px;"></div>
+    </div>
+
+    <div id="tabla-pedido-wrap" style="display:none;">
+      <div class="card" style="padding:0;overflow:hidden;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr style="background:#f5f4f0;">
+            <th style="padding:8px 14px;text-align:left;font-weight:700;font-size:11px;color:#777;">SKU</th>
+            <th style="padding:8px 14px;text-align:left;font-weight:700;font-size:11px;color:#777;">CVE Familia</th>
+            <th style="padding:8px 14px;text-align:center;font-weight:700;font-size:11px;color:#777;">Esperado</th>
+            <th style="padding:8px 14px;"></th>
+          </tr></thead>
+          <tbody id="tbody-pedido"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MONITOR -->
+  <div id="s-monitor" class="screen">
+    <div class="monitor-grid" id="monitor-stats"></div>
+    <div id="monitor-tarimas"></div>
+  </div>
+
+  <!-- COMPARAR — solo visible tras finalizar -->
+  <div id="s-comparar" class="screen">
+    <div id="comparar-bloqueado" style="display:none;">
+      <div class="card" style="text-align:center;padding:24px;">
+        <div style="font-size:32px;margin-bottom:10px;">🔒</div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:6px;">Conteo en progreso</div>
+        <p style="font-size:12px;color:#888;">Las diferencias se calculan al finalizar el conteo. Ve a la pestaña Monitor y presiona "Finalizar conteo".</p>
+      </div>
+    </div>
+    <div id="comparar-contenido" style="display:none;">
+      <div class="card" style="background:#fffbf0;border-color:#f0a500;margin-bottom:10px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:space-around;">
+          <div style="text-align:center;"><div style="font-size:22px;font-weight:700;color:#2e7d32;" id="cmp-ok">0</div><div style="font-size:10px;color:#888;">✅ Cuadrados</div></div>
+          <div style="text-align:center;"><div style="font-size:22px;font-weight:700;color:#c62828;" id="cmp-short">0</div><div style="font-size:10px;color:#888;">📉 Faltantes</div></div>
+          <div style="text-align:center;"><div style="font-size:22px;font-weight:700;color:#1565c0;" id="cmp-over">0</div><div style="font-size:10px;color:#888;">📈 Sobrantes</div></div>
+          <div style="text-align:center;"><div style="font-size:22px;font-weight:700;color:#e65100;" id="cmp-extra">0</div><div style="font-size:10px;color:#888;">➕ Extras</div></div>
+          <div style="text-align:center;"><div style="font-size:22px;font-weight:700;color:#999;" id="cmp-pend">0</div><div style="font-size:10px;color:#888;">⏳ Pendientes</div></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+        <button class="btn-sm btn-dark" id="f-todos" onclick="setFiltro('todos',this)" style="border-radius:20px;">Todos</button>
+        <button class="btn-sm" id="f-diff" onclick="setFiltro('diff',this)" style="border-radius:20px;">Diferencias</button>
+        <button class="btn-sm" id="f-ok" onclick="setFiltro('ok',this)" style="border-radius:20px;">Cuadrados</button>
+        <button class="btn-sm" id="f-pend" onclick="setFiltro('pend',this)" style="border-radius:20px;">Pendientes</button>
+      </div>
+      <div id="lista-comparar"></div>
+    </div>
+  </div>
+
+  <!-- BUSCADOR -->
+  <div id="s-buscador" class="screen">
+    <div class="card">
+      <div class="card-title">Ubicar pieza en tarima</div>
+      <p style="font-size:12px;color:#888;margin-bottom:10px;">Busca un SKU o CVE Familia para saber en qué tarima está.</p>
+      <input class="inp" type="text" id="inp-buscar" placeholder="Escribe SKU o CVE Familia..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" oninput="buscarSKU()" style="font-size:17px;margin-bottom:0;"/>
+    </div>
+    <div id="resultado-buscar"></div>
+    <div class="card">
+      <div class="card-title">Todas las tarimas</div>
+      <div id="resumen-tarimas-buscador"></div>
+    </div>
+  </div>
+
+  <!-- EXPORTAR -->
+  <div id="s-exportar" class="screen">
+    <div class="card">
+      <div class="card-title">Exportar a Excel</div>
+      <p style="font-size:12px;color:#888;margin-bottom:12px;">Incluye SKU, CVE Familia, tarima, contador, esperado, recibido y diferencia.</p>
+      <div id="btn-cuadrado-wrap" style="display:none;">
+        <button class="exp-btn exp-green" onclick="exportCuadrado()">✅ Todo cuadrado — Reporte final (.xlsx)</button>
+      </div>
+      <button class="exp-btn exp-amber" onclick="exportCompleto()">📥 Reporte completo (.xlsx)</button>
+      <button class="exp-btn exp-out" onclick="exportDiferencias()">⚠️ Solo diferencias (.xlsx)</button>
+      <button class="exp-btn exp-dark" onclick="exportFaltantes()">📉 Solo faltantes (.xlsx)</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Resumen</div>
+      <div id="resumen-exp"></div>
+    </div>
+  </div>
+
+  <!-- CAPTURA CONTADOR -->
+  <div id="s-captura" class="screen">
+    <div style="background:#1a1a1a;color:#f0a500;border-radius:10px;padding:9px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:13px;font-weight:700;" id="cnt-tarima-label">📦 —</span>
+      <span style="font-size:11px;color:#888;" id="cnt-nombre-label">—</span>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-n col-blue" id="cnt-st-esp">0</div><div class="stat-l">Esperados</div></div>
+      <div class="stat"><div class="stat-n" id="cnt-st-rec">0</div><div class="stat-l">En mi tarima</div></div>
+      <div class="stat"><div class="stat-n col-err" id="cnt-st-diff">0</div><div class="stat-l">Con diferencia</div></div>
+      <div class="stat"><div class="stat-n col-ok" id="cnt-st-ok">0</div><div class="stat-l">Cuadrados</div></div>
+    </div>
+    <div id="conteo-bloqueado" style="display:none;">
+      <div class="card" style="text-align:center;padding:20px;border-color:#2e7d32;">
+        <div style="font-size:28px;margin-bottom:8px;">✅</div>
+        <div style="font-size:14px;font-weight:700;color:#2e7d32;">Conteo finalizado</div>
+        <p style="font-size:12px;color:#888;margin-top:6px;">El supervisor ha cerrado el conteo. Ya no se pueden registrar más piezas.</p>
+      </div>
+    </div>
+    <div id="conteo-activo">
+      <div class="card">
+        <div class="card-title">Registrar pieza</div>
+        <label class="lbl">Código SKU</label>
+        <input class="inp" type="text" id="inp-sku-cap" placeholder="Ej. BV002i" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" oninput="previewSKU()" onkeydown="if(event.key==='Enter')document.getElementById('inp-cant-cap').focus()"/>
+        <div id="prev-sku-cap" class="sku-prev"></div>
+        <div class="g2">
+          <div><label class="lbl">Cantidad recibida</label><input class="inp" type="number" id="inp-cant-cap" placeholder="0" min="0" inputmode="numeric" style="font-size:24px;font-weight:700;text-align:center;" onkeydown="if(event.key==='Enter')registrarRecibido()"/></div>
+          <div style="display:flex;align-items:flex-end;"><button class="btn btn-amber" onclick="registrarRecibido()" style="margin-top:0;">✓ Registrar</button></div>
+        </div>
+        <div id="msg-cap-ok" class="msg msg-ok"></div>
+        <div id="msg-cap" class="msg msg-err"></div>
+      </div>
+      <div id="tarima-no-terminada">
+        <button class="btn btn-green" onclick="finalizarTarima()" style="margin-top:4px;">✅ Finalizar mi tarima</button>
+      </div>
+      <div id="tarima-ya-terminada" style="display:none;">
+        <div style="background:#e8f5e9;border:1.5px solid #2e7d32;border-radius:10px;padding:12px 16px;margin-top:4px;text-align:center;">
+          <div style="font-size:18px;font-weight:700;color:#2e7d32;">✅ Tarima finalizada</div>
+          <p style="font-size:12px;color:#888;margin-top:4px;">El supervisor puede verla como terminada. Aún puedes seguir registrando si te faltó algo.</p>
+          <button class="btn btn-outline" onclick="reabrirTarima()" style="margin-top:8px;font-size:12px;padding:8px;">↩ Reabrir mi tarima</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MIS PIEZAS CONTADOR -->
+  <div id="s-mis" class="screen">
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+      Piezas en mi tarima
+      <span style="font-size:11px;color:#888;" id="mis-count">0 registros</span>
+    </div>
+    <div id="lista-mis"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, set, get, onValue } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+// ══════════════════════════════════════════
+// 🔧 TU CONFIGURACIÓN FIREBASE
+// ══════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyBZ5LQqpnN-W1-tEk50wtANU-i4sD1F6dc",
+  authDomain: "anautomy-recepcion-5af0d.firebaseapp.com",
+  databaseURL: "https://anautomy-recepcion-5af0d-default-rtdb.firebaseio.com",
+  projectId: "anautomy-recepcion-5af0d",
+  storageBucket: "anautomy-recepcion-5af0d.firebasestorage.app",
+  messagingSenderId: "433527236716",
+  appId: "1:433527236716:web:0a7aaf64ff40b4ffb79049"
+};
+// ══════════════════════════════════════════
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ── ESTADO GLOBAL ──
+// recibidos ahora usa clave "SKU__TARIMAID" para permitir mismo SKU en varias tarimas
+let rol=null, miNombre='', miTarima=null, filtroActivo='todos';
+let pedido={}, recibidos={}, tarimas=[], fase='conteo'; // fase: 'conteo' | 'finalizado'
+
+function fbSet(path,data){ return set(ref(db,path),data).catch(e=>console.error(e)); }
+async function fbGet(path){ try{const s=await get(ref(db,path));return s.exists()?s.val():null;}catch(e){return null;} }
+function fbListen(path,cb){ onValue(ref(db,path),s=>cb(s.exists()?s.val():null)); }
+
+// ── HELPERS RECIBIDOS ──
+// Clave única por SKU+Tarima+Timestamp — permite múltiples cajas del mismo SKU en la misma tarima
+function recKey(sku,tarim){ return sku+'__'+tarim+'__'+Date.now(); }
+// Todos los registros de un SKU (todas las tarimas, todas las cajas)
+function recDesku(sku){ return Object.values(recibidos).filter(r=>r.sku===sku); }
+// Registros de un SKU en una tarima específica (puede haber varios)
+function recDeskuTarima(sku,tarim){ return Object.values(recibidos).filter(r=>r.sku===sku&&r.tarima===tarim); }
+// Total recibido de un SKU en UNA tarima
+function totalRecSkuTarima(sku,tarim){ return recDeskuTarima(sku,tarim).reduce((a,r)=>a+r.cant,0); }
+// Total recibido de un SKU sumando TODAS las tarimas
+function totalRecSku(sku){ return recDesku(sku).reduce((a,r)=>a+r.cant,0); }
+
+// ── INIT ──
+async function init(){
+  document.getElementById('loading-screen').style.display='none';
+  document.getElementById('login-screen').style.display='block';
+  fbListen('tarimas', val=>{
+    tarimas.length=0;
+    if(val) tarimas.push(...Object.values(val));
+    rellenarSelectTarimas();
+    if(rol==='supervisor'){ renderTarimasSup(); }
+  });
+  fbListen('fase', val=>{ fase=val||'conteo'; actualizarFaseBadge(); if(rol==='supervisor')actualizarNBadge(); if(rol==='contador')mostrarEstadoConteo(); });
+}
+init();
+
+function actualizarFaseBadge(){
+  const b=document.getElementById('hdr-fase');
+  if(!b)return;
+  if(fase==='finalizado'){b.textContent='Finalizado';b.className='fase-badge fase-finalizado';}
+  else{b.textContent='Conteo';b.className='fase-badge fase-conteo';}
+}
+function mostrarEstadoConteo(){
+  const bloq=document.getElementById('conteo-bloqueado');
+  const activo=document.getElementById('conteo-activo');
+  if(!bloq||!activo)return;
+  bloq.style.display=fase==='finalizado'?'block':'none';
+  activo.style.display=fase==='finalizado'?'none':'block';
+  // Mostrar estado de tarima terminada
+  if(fase!=='finalizado') actualizarEstadoTarima();
+}
+
+function actualizarEstadoTarima(){
+  const t=tarimas.find(x=>x.id===miTarima);
+  const fin=t?.terminada===true;
+  const btnNoTerm=document.getElementById('tarima-no-terminada');
+  const btnTerm=document.getElementById('tarima-ya-terminada');
+  if(btnNoTerm) btnNoTerm.style.display=fin?'none':'block';
+  if(btnTerm) btnTerm.style.display=fin?'block':'none';
+}
+
+window.finalizarTarima=async function(){
+  if(!confirm('¿Marcar tu tarima como terminada? Aún podrás seguir registrando si te faltó algo.'))return;
+  const t=tarimas.find(x=>x.id===miTarima);
+  if(t){t.terminada=true;await fbSet('tarimas/'+t.id,t);}
+  actualizarEstadoTarima();
+  if(navigator.vibrate)navigator.vibrate([40,30,40]);
+};
+window.reabrirTarima=async function(){
+  const t=tarimas.find(x=>x.id===miTarima);
+  if(t){t.terminada=false;await fbSet('tarimas/'+t.id,t);}
+  actualizarEstadoTarima();
+};
+
+// ── LOGIN ──
+window.selectRole=function(r){
+  document.getElementById('login-step1').style.display='none';
+  document.getElementById('login-step2').style.display='block';
+  if(r==='supervisor'){
+    document.getElementById('login-form-sup').style.display='block';
+    document.getElementById('login-form-cnt').style.display='none';
+    setTimeout(()=>document.getElementById('sup-nombre').focus(),100);
+  } else {
+    document.getElementById('login-form-sup').style.display='none';
+    document.getElementById('login-form-cnt').style.display='block';
+  }
+};
+window.backLogin=function(){
+  document.getElementById('login-step1').style.display='block';
+  document.getElementById('login-step2').style.display='none';
+};
+function rellenarSelectTarimas(){
+  const sel=document.getElementById('cnt-tarima-sel');
+  if(!sel)return;
+  sel.innerHTML='<option value="">— Selecciona tu tarima —</option>';
+  if(!tarimas.length){ sel.innerHTML+='<option value="" disabled>El supervisor aún no ha creado tarimas</option>'; return; }
+  const sorted=[...tarimas].sort((a,b)=>parseInt(a.id.replace('T',''))-parseInt(b.id.replace('T','')));
+  sorted.forEach(t=>{
+    const op=document.createElement('option');
+    op.value=t.id;
+    op.textContent=t.nombre+(t.contador?' · '+t.contador:' · Disponible');
+    sel.appendChild(op);
+  });
+}
+
+window.entrarSupervisor=async function(){
+  const nombre=document.getElementById('sup-nombre').value.trim();
+  if(!nombre){document.getElementById('sup-nombre').focus();return;}
+  rol='supervisor'; miNombre=nombre;
+  await cargarEstadoInicial(); iniciarApp();
+};
+window.entrarContador=async function(){
+  const nombre=document.getElementById('cnt-nombre').value.trim();
+  const tarim=document.getElementById('cnt-tarima-sel').value;
+  if(!nombre){mostrarMsg('msg-login','Ingresa tu nombre','err');return;}
+  if(!tarim){mostrarMsg('msg-login','Selecciona tu tarima','err');return;}
+  if(fase==='finalizado'){mostrarMsg('msg-login','El conteo ya fue finalizado por el supervisor','err');return;}
+  const t=tarimas.find(x=>x.id===tarim);
+  if(t){t.contador=nombre;t.activa=true;await fbSet('tarimas/'+t.id,t);}
+  rol='contador'; miNombre=nombre; miTarima=tarim;
+  await cargarEstadoInicial(); iniciarApp();
+};
+
+async function cargarEstadoInicial(){
+  const p=await fbGet('pedido'); if(p) Object.assign(pedido,p);
+  const r=await fbGet('recibidos'); if(r) Object.assign(recibidos,r);
+  const f=await fbGet('fase'); if(f) fase=f;
+}
+
+function iniciarApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('main-app').style.display='block';
+  document.getElementById('hdr-user').textContent=miNombre;
+  actualizarFaseBadge();
+  if(rol==='supervisor'){
+    document.getElementById('tabs-sup').style.display='flex';
+    renderPedido(); renderTarimasSup(); actualizarNBadge();
+    fbListen('pedido',val=>{ Object.keys(pedido).forEach(k=>delete pedido[k]); if(val)Object.assign(pedido,val); renderPedido();actualizarNBadge();reRenderActive(); });
+    fbListen('recibidos',val=>{ Object.keys(recibidos).forEach(k=>delete recibidos[k]); if(val)Object.assign(recibidos,val); actualizarNBadge();reRenderActive();renderTarimasSup(); });
+    fbListen('tarimas',val=>{ tarimas.length=0;if(val)tarimas.push(...Object.values(val)); renderTarimasSup();reRenderActive(); });
+  } else {
+    document.getElementById('tabs-cnt').style.display='flex';
+    const t=tarimas.find(x=>x.id===miTarima);
+    document.getElementById('cnt-tarima-label').textContent='📦 '+(t?t.nombre:miTarima);
+    document.getElementById('cnt-nombre-label').textContent=miNombre;
+    mostrarEstadoConteo(); actualizarStatsCnt();
+    fbListen('pedido',val=>{ Object.keys(pedido).forEach(k=>delete pedido[k]);if(val)Object.assign(pedido,val);actualizarStatsCnt(); });
+    fbListen('recibidos',val=>{ Object.keys(recibidos).forEach(k=>delete recibidos[k]);if(val)Object.assign(recibidos,val);actualizarStatsCnt();const a=document.querySelector('.screen.active')?.id;if(a==='s-mis')renderMisPiezas(); });
+    fbListen('fase',val=>{ fase=val||'conteo'; mostrarEstadoConteo(); actualizarFaseBadge(); });
+    fbListen('tarimas',val=>{ tarimas.length=0;if(val)tarimas.push(...Object.values(val));actualizarEstadoTarima(); });
+  }
+}
+
+function reRenderActive(){
+  const id=document.querySelector('.screen.active')?.id;
+  if(id==='s-monitor')renderMonitor();
+  if(id==='s-comparar')renderComparar();
+  if(id==='s-exportar')renderResumenExp();
+  if(id==='s-buscador'){buscarSKU();renderResumenTarimasBuscador();}
+}
+
+window.showTab=function(id,btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+  if(id==='s-comparar')renderComparar();
+  if(id==='s-exportar')renderResumenExp();
+  if(id==='s-monitor')renderMonitor();
+  if(id==='s-buscador'){renderResumenTarimasBuscador();}
+  if(id==='s-mis')renderMisPiezas();
+};
+
+// ── CARGAR ARCHIVO ──
+window.cargarArchivo=function(e){
+  const file=e.target.files[0]; if(!file)return;
+  if(file.name.endsWith('.csv')||file.name.endsWith('.txt')){
+    Papa.parse(file,{header:true,skipEmptyLines:true,complete:r=>procesarFilas(r.data),error:()=>mostrarMsg('msg-import','Error al leer el archivo','err')});
+  } else {
+    const reader=new FileReader();
+    reader.onload=ev=>{try{const wb=XLSX.read(ev.target.result,{type:'array'});procesarFilas(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}));}catch(err){mostrarMsg('msg-import','Error al leer el .xlsx','err');}};
+    reader.readAsArrayBuffer(file);
+  }
+};
+async function procesarFilas(rows){
+  let count=0;
+  rows.forEach(row=>{
+    const sku=(row.SKU||row.sku||row.Sku||row.CODIGO||row.codigo||row.Code||'').toString().trim().toUpperCase();
+    const cant=parseInt(row.CANTIDAD||row.cantidad||row.Cantidad||row.QTY||row.qty||row.CANT||row.cant||0);
+    const cat=(row.CATEGORIA||row.categoria||row.CAT||row.cat||'').toString().trim();
+    const cve=(row['CVE FAMILIA']||row['CVE_FAMILIA']||row['cve familia']||row['cve_familia']||row.CVE||row.cve||row.FAMILIA||row.familia||'').toString().trim();
+    if(sku&&cant>0){pedido[sku]={sku,cat:cat||sku,cve:cve||'',esperado:cant};count++;}
+  });
+  if(count>0){await fbSet('pedido',pedido);mostrarMsg('msg-import',count+' SKUs cargados ✅','ok');renderPedido();actualizarNBadge();}
+  else mostrarMsg('msg-import','No se encontraron datos. Verifica columnas SKU y CANTIDAD.','err');
+}
+
+window.agregarPedido=async function(){
+  const s=document.getElementById('inp-sku-ped').value.trim().toUpperCase();
+  const c=parseInt(document.getElementById('inp-cant-ped').value);
+  if(!s){mostrarMsg('msg-ped','Ingresa un SKU','err');return;}
+  if(isNaN(c)||c<1){mostrarMsg('msg-ped','Ingresa cantidad válida','err');return;}
+  pedido[s]={sku:s,cat:s,cve:'',esperado:c};
+  document.getElementById('inp-sku-ped').value='';
+  document.getElementById('inp-cant-ped').value='';
+  await fbSet('pedido',pedido); renderPedido(); actualizarNBadge();
+  document.getElementById('inp-sku-ped').focus();
+};
+window.eliminarPedido=async function(sku){delete pedido[sku];await fbSet('pedido',pedido);renderPedido();actualizarNBadge();};
+window.limpiarTodo=async function(){
+  if(!confirm('¿Borrar todo el pedido, registros y tarimas?'))return;
+  Object.keys(pedido).forEach(k=>delete pedido[k]);
+  Object.keys(recibidos).forEach(k=>delete recibidos[k]);
+  tarimas.length=0; fase='conteo';
+  await fbSet('pedido',{});await fbSet('recibidos',{});await fbSet('tarimas',{});await fbSet('fase','conteo');
+  renderPedido();renderTarimasSup();actualizarNBadge();actualizarFaseBadge();
+};
+
+function renderPedido(){
+  const keys=Object.keys(pedido);
+  document.getElementById('tabla-pedido-wrap').style.display=keys.length?'block':'none';
+  document.getElementById('tbody-pedido').innerHTML=keys.map(k=>{
+    const p=pedido[k];
+    return `<tr><td style="padding:8px 14px;font-weight:700;font-size:13px;">${p.sku}</td><td style="padding:8px 14px;font-size:12px;color:#888;">${p.cve||'—'}</td><td style="padding:8px 14px;text-align:center;font-weight:700;color:#1565c0;">${p.esperado}</td><td style="padding:8px 14px;text-align:right;"><button class="btn-del" onclick="eliminarPedido('${k}')">×</button></td></tr>`;
+  }).join('');
+}
+
+// ── TARIMAS — agregar sin borrar las existentes ──
+window.agregarTarimas=async function(){
+  const n=parseInt(document.getElementById('inp-num-tarimas').value);
+  if(isNaN(n)||n<1||n>99)return;
+  // Número más alto actual
+  let maxNum=tarimas.reduce((max,t)=>{const m=t.id.match(/T0*(\d+)/);return m?Math.max(max,parseInt(m[1])):max;},0);
+  const obj={};
+  for(let i=1;i<=n;i++){
+    const num=maxNum+i;
+    const id='T'+String(num).padStart(3,'0'); // T001, T002 ... T010, T011
+    const t={id,nombre:'Tarima '+num,contador:null,activa:false,terminada:false};
+    tarimas.push(t); obj[id]=t;
+  }
+  for(const [id,t] of Object.entries(obj)) await fbSet('tarimas/'+id,t);
+  document.getElementById('inp-num-tarimas').value='';
+  renderTarimasSup();
+  mostrarMsg('msg-ped',n+' tarimas agregadas ✅','ok');
+};
+
+function renderTarimasSup(){
+  document.getElementById('tarimas-count').textContent=tarimas.length+' tarimas';
+  const cont=document.getElementById('lista-tarimas-sup');
+  if(!tarimas.length){cont.innerHTML='';return;}
+  const sorted=[...tarimas].sort((a,b)=>parseInt(a.id.replace('T',''))-parseInt(b.id.replace('T','')));
+  cont.innerHTML=sorted.map(t=>{
+    const recs=Object.values(recibidos).filter(r=>r.tarima===t.id);
+    const total=recs.reduce((a,r)=>a+r.cant,0);
+    const fin=t.terminada===true;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f0f0f0;font-size:12px;gap:6px;">
+      <span class="tarima-badge" style="${fin?'background:#2e7d32;':''}">${t.nombre}${fin?' ✅':''}</span>
+      <span style="color:#888;flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.contador||'Disponible'}</span>
+      <span style="font-weight:700;white-space:nowrap;">${recs.length} SKUs · ${total} pzas</span>
+    </div>`;
+  }).join('');
+}
+
+// ── FINALIZAR CONTEO ──
+window.finalizarConteo=async function(){
+  if(!confirm('¿Finalizar el conteo? Los contadores ya no podrán registrar más piezas y se mostrarán las diferencias.'))return;
+  fase='finalizado';
+  await fbSet('fase','finalizado');
+  actualizarFaseBadge(); actualizarNBadge();
+  renderComparar(); renderResumenExp();
+  mostrarMsg('msg-monitor','Conteo finalizado ✅ — ya puedes ver las diferencias','ok');
+};
+window.reabrirConteo=async function(){
+  if(!confirm('¿Reabrir el conteo? Los contadores podrán seguir registrando piezas.'))return;
+  fase='conteo';
+  await fbSet('fase','conteo');
+  actualizarFaseBadge(); actualizarNBadge();
+};
+
+function renderMonitor(){
+  // Calcular totales por SKU sumando todas las tarimas
+  const skusPedido=Object.keys(pedido);
+  const skusRecibidos=[...new Set(Object.values(recibidos).map(r=>r.sku))];
+  const allSkus=new Set([...skusPedido,...skusRecibidos]);
+  let ok=0,diff=0,pend=0;
+  allSkus.forEach(sku=>{
+    const p=pedido[sku],tot=totalRecSku(sku);
+    const recs=recDesku(sku);
+    if(!recs.length) pend++;
+    else if(p&&tot===p.esperado) ok++;
+    else diff++;
+  });
+  document.getElementById('monitor-stats').innerHTML=[
+    {l:'SKUs esperados',n:skusPedido.length,c:'#1565c0'},
+    {l:'SKUs con registro',n:skusRecibidos.length,c:'#1a1a1a'},
+    {l:'Con diferencia',n:diff,c:'#c62828'},
+    {l:'Cuadrados',n:ok,c:'#2e7d32'},
+  ].map(s=>`<div class="mon-stat"><div class="mon-n" style="color:${s.c}">${s.n}</div><div class="mon-l">${s.l}</div></div>`).join('');
+
+  const cont=document.getElementById('monitor-tarimas');
+
+  // Botón finalizar/reabrir
+  const btnFin=fase==='conteo'
+    ?`<button class="btn btn-red" onclick="finalizarConteo()" style="margin-bottom:12px;">🔒 Finalizar conteo y ver diferencias</button>`
+    :`<button class="btn btn-outline" onclick="reabrirConteo()" style="margin-bottom:12px;color:#e65100;border-color:#e65100;">🔓 Reabrir conteo</button>`;
+  const msgMon=`<div id="msg-monitor" class="msg msg-ok" style="margin-bottom:10px;"></div>`;
+
+  if(!tarimas.length){cont.innerHTML=btnFin+msgMon+'<div class="empty">Crea tarimas en la pestaña Pedido.</div>';return;}
+  const sorted=[...tarimas].sort((a,b)=>parseInt(a.id.replace('T',''))-parseInt(b.id.replace('T','')));
+  // Encontrar la primera tarima no terminada (la que sigue)
+  const proximaIdx=sorted.findIndex(t=>!t.terminada);
+  cont.innerHTML=btnFin+msgMon+sorted.map((t,idx)=>{
+    const recs=Object.values(recibidos).filter(r=>r.tarima===t.id);
+    const totalSku=skusPedido.length;
+    const pct=totalSku?Math.min(100,Math.round(recs.length/totalSku*100)):0;
+    let okT=0,diffT=0;
+    recs.forEach(r=>{
+      const p=pedido[r.sku];
+      const tot=totalRecSku(r.sku);
+      if(p){if(tot===p.esperado)okT++;else diffT++;}
+    });
+    const fin=t.terminada===true;
+    const esSiguiente=!fin&&idx===proximaIdx;
+    const borderColor=fin?'#2e7d32':esSiguiente?'#f0a500':'#e8e8e8';
+    const bgColor=fin?'#f0fff4':esSiguiente?'#fffbf0':'#fff';
+    let estadoBadge;
+    if(fin) estadoBadge='<span class="badge b-ok">✅ Terminada</span>';
+    else if(esSiguiente) estadoBadge='<span class="badge" style="background:#fff3e0;color:#e65100;">👉 Siguiente</span>';
+    else if(recs.length>0) estadoBadge='<span class="badge b-ok">🟢 Activa</span>';
+    else estadoBadge='<span class="badge b-pend">⏳ Pendiente</span>';
+    return `<div class="tarima-card" style="border-color:${borderColor};background:${bgColor};">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:3px;">
+            <span class="tarima-badge" style="${fin?'background:#2e7d32;':esSiguiente?'background:#e65100;':''}">${t.nombre}</span>
+          </div>
+          <div style="font-size:11px;color:#888;margin-top:4px;">${t.contador||'Sin asignar'} · ${recs.length} SKUs registrados</div>
+        </div>
+        ${estadoBadge}
+      </div>
+      ${recs.length?`<div style="display:flex;gap:12px;font-size:11px;margin-top:6px;">
+        <span style="color:#2e7d32;">✅ ${okT} cuadrados</span>
+        ${diffT?`<span style="color:#c62828;">⚠️ ${diffT} con dif.</span>`:''}
+        <span style="color:#888;">${recs.reduce((a,r)=>a+r.cant,0)} pzas</span>
+      </div>`:''}
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${fin?'#2e7d32':'#f0a500'};"></div></div>
+      <div style="text-align:right;font-size:10px;color:#bbb;margin-top:3px;">${pct}%</div>
+    </div>`;
+  }).join('');
+}
+
+// ── CAPTURA ──
+window.previewSKU=function(){
+  const v=document.getElementById('inp-sku-cap').value.trim().toUpperCase();
+  const prev=document.getElementById('prev-sku-cap');
+  if(!v){prev.style.display='none';return;}
+  const p=pedido[v];
+  const yaEnMiTarima=totalRecSkuTarima(v,miTarima);
+  const totGlobal=totalRecSku(v);
+  const totOtrasTarimas=totGlobal-yaEnMiTarima;
+  if(p){
+    let txt=`📋 Esperado total: ${p.esperado}`;
+    if(totOtrasTarimas>0) txt+=` · En otras tarimas: ${totOtrasTarimas}`;
+    if(yaEnMiTarima>0) txt+=` · En mi tarima: ${yaEnMiTarima}`;
+    const resta=p.esperado-totGlobal;
+    if(resta>0) txt+=` · Faltan: ${resta}`;
+    else if(resta===0) txt=' ✅ Ya cuadrado entre todas las tarimas';
+    else txt+=` · Sobran: ${Math.abs(resta)}`;
+    prev.className='sku-prev '+(resta>0?'info':resta===0?'ok':'warn');
+    prev.textContent=txt;
+  } else {
+    prev.className='sku-prev warn';
+    prev.textContent='⚠️ No está en el pedido — se registrará como extra';
+  }
+  prev.style.display='block';
+};
+
+window.registrarRecibido=async function(){
+  if(fase==='finalizado'){mostrarMsg('msg-cap','El conteo ya fue finalizado','err');return;}
+  const s=document.getElementById('inp-sku-cap').value.trim().toUpperCase();
+  const c=parseInt(document.getElementById('inp-cant-cap').value);
+  if(!s){mostrarMsg('msg-cap','Ingresa un SKU','err');return;}
+  if(isNaN(c)||c<0){mostrarMsg('msg-cap','Ingresa cantidad válida','err');return;}
+  const btn=document.querySelector('#s-captura .btn-amber');
+  btn.disabled=true; btn.textContent='...';
+  const cat=pedido[s]?.cat||s;
+  // Clave única con timestamp — permite múltiples cajas del mismo SKU en la misma tarima
+  const key=recKey(s,miTarima);
+  recibidos[key]={sku:s,cat,cant:c,quien:miNombre,tarima:miTarima,ts:Date.now()};
+  await fbSet('recibidos/'+key,recibidos[key]);
+  document.getElementById('inp-sku-cap').value='';
+  document.getElementById('inp-cant-cap').value='';
+  document.getElementById('prev-sku-cap').style.display='none';
+  btn.disabled=false; btn.textContent='✓ Registrar';
+  const p=pedido[s];
+  const totEnTarima=totalRecSkuTarima(s,miTarima);
+  const totGlobal=totalRecSku(s);
+  const tNombre=tarimas.find(x=>x.id===miTarima)?.nombre||miTarima;
+  let msg=`✅ ${s}: +${c} pzas en ${tNombre} (total tarima: ${totEnTarima})`;
+  if(p){const d=totGlobal-p.esperado;msg+=d===0?' — ¡Cuadrado!':d<0?' — Faltan '+Math.abs(d)+' en total':' — Sobran '+d+' en total';}
+  mostrarMsg('msg-cap-ok',msg,'ok');
+  actualizarStatsCnt();
+  if(navigator.vibrate)navigator.vibrate(40);
+  document.getElementById('inp-sku-cap').focus();
+};
+
+function actualizarStatsCnt(){
+  const misRecs=Object.values(recibidos).filter(r=>r.tarima===miTarima);
+  const misSkus=[...new Set(misRecs.map(r=>r.sku))];
+  let ok=0,diff=0;
+  misSkus.forEach(sku=>{
+    const p=pedido[sku];
+    if(p){const tot=totalRecSku(sku);if(tot===p.esperado)ok++;else diff++;}
+  });
+  document.getElementById('cnt-st-esp').textContent=Object.keys(pedido).length;
+  document.getElementById('cnt-st-rec').textContent=misSkus.length;
+  document.getElementById('cnt-st-diff').textContent=diff;
+  document.getElementById('cnt-st-ok').textContent=ok;
+}
+
+function renderMisPiezas(){
+  const cont=document.getElementById('lista-mis');
+  const arr=Object.values(recibidos).filter(r=>r.tarima===miTarima).sort((a,b)=>a.sku.localeCompare(b.sku)||b.ts-a.ts);
+  // Agrupar por SKU
+  const porSku={};
+  arr.forEach(r=>{ if(!porSku[r.sku]) porSku[r.sku]=[]; porSku[r.sku].push(r); });
+  const skus=Object.keys(porSku).sort();
+  document.getElementById('mis-count').textContent=skus.length+' SKUs · '+arr.length+' registros';
+  if(!arr.length){cont.innerHTML='<div class="empty">Aún no has registrado piezas.</div>';return;}
+  cont.innerHTML=skus.map(sku=>{
+    const entradas=porSku[sku];
+    const p=pedido[sku];
+    const totEnTarima=entradas.reduce((a,r)=>a+r.cant,0);
+    const totGlobal=totalRecSku(sku);
+    let badge='<span class="badge b-extra">➕ Extra</span>';
+    if(p){
+      if(totGlobal===p.esperado) badge='<span class="badge b-ok">✅ OK</span>';
+      else if(totGlobal<p.esperado) badge=`<span class="badge b-short">📉 Falta ${p.esperado-totGlobal}</span>`;
+      else badge=`<span class="badge b-over">📈 Sobran ${totGlobal-p.esperado}</span>`;
+    }
+    // Fila resumen del SKU
+    let html=`<div class="rec-item" style="background:${entradas.length>1?'#fffbf0':'#fff'};border-color:${entradas.length>1?'#f0a500':'#e8e8e8'};">
+      <div style="flex:1;">
+        <div class="rec-sku">${sku}${entradas.length>1?` <span style="font-size:10px;color:#f0a500;font-weight:700;">${entradas.length} cajas</span>`:''}</div>
+        <div class="rec-cat">${p?.cve?`<span style="color:#e65100;font-weight:600;">${p.cve}</span> · `:''}${entradas[0].cat}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="text-align:right;">
+          <div class="rec-cant">${totEnTarima}</div>
+          ${p?`<div style="font-size:10px;color:#aaa;">global: ${totGlobal}/${p.esperado}</div>`:''}
+        </div>
+        ${badge}
+      </div>
+    </div>`;
+    // Si hay más de una entrada, mostrar el desglose por caja
+    if(entradas.length>1){
+      html+=`<div style="margin:-6px 0 8px 12px;padding:6px 10px;background:#fffbf0;border-radius:0 0 8px 8px;border:1px solid #f0a500;border-top:none;">`;
+      entradas.forEach((r,i)=>{
+        html+=`<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:${i<entradas.length-1?'1px solid #f5e8c0':'none'};">
+          <span style="color:#888;">Caja ${i+1}</span>
+          <span style="font-weight:700;">${r.cant} pzas</span>
+        </div>`;
+      });
+      html+=`</div>`;
+    }
+    return html;
+  }).join('');
+}
+
+// ── COMPARAR — suma todas las tarimas por SKU ──
+function renderComparar(){
+  const bloq=document.getElementById('comparar-bloqueado');
+  const cont2=document.getElementById('comparar-contenido');
+  if(fase!=='finalizado'){
+    bloq.style.display='block'; cont2.style.display='none'; return;
+  }
+  bloq.style.display='none'; cont2.style.display='block';
+
+  const allSkus=new Set([...Object.keys(pedido),...new Set(Object.values(recibidos).map(r=>r.sku))]);
+  let ok=0,short=0,over=0,extra=0,pend=0;
+  const items=[];
+  allSkus.forEach(sku=>{
+    const p=pedido[sku];
+    const recs=recDesku(sku);
+    const totRec=recs.length?totalRecSku(sku):null;
+    const esp=p?.esperado||0;
+    let tipo,badge;
+    if(totRec===null){tipo='pend';badge='<span class="badge b-pend">⏳ Pendiente</span>';pend++;}
+    else if(!p){tipo='extra';badge='<span class="badge b-extra">➕ Extra</span>';extra++;}
+    else if(totRec===esp){tipo='ok';badge='<span class="badge b-ok">✅ OK</span>';ok++;}
+    else if(totRec<esp){tipo='diff';badge=`<span class="badge b-short">📉 Falta ${esp-totRec}</span>`;short++;}
+    else{tipo='diff';badge=`<span class="badge b-over">📈 Sobran ${totRec-esp}</span>`;over++;}
+    items.push({sku,p,recs,esp,totRec,tipo,badge});
+  });
+  document.getElementById('cmp-ok').textContent=ok;
+  document.getElementById('cmp-short').textContent=short;
+  document.getElementById('cmp-over').textContent=over;
+  document.getElementById('cmp-extra').textContent=extra;
+  document.getElementById('cmp-pend').textContent=pend;
+
+  let filtered=items;
+  if(filtroActivo==='diff') filtered=items.filter(i=>i.tipo==='diff'||i.tipo==='extra');
+  else if(filtroActivo==='ok') filtered=items.filter(i=>i.tipo==='ok');
+  else if(filtroActivo==='pend') filtered=items.filter(i=>i.tipo==='pend');
+
+  const cont=document.getElementById('lista-comparar');
+  if(!filtered.length){cont.innerHTML='<div class="empty">Sin resultados.</div>';return;}
+  cont.innerHTML=filtered.map(i=>{
+    const diff=i.totRec!==null?i.totRec-i.esp:null;
+    const dc=diff===null?'#999':diff===0?'#2e7d32':diff<0?'#c62828':'#1565c0';
+    // Lista de tarimas donde aparece este SKU
+    const tarimasLista=i.recs.map(r=>{const t=tarimas.find(x=>x.id===r.tarima);return `<span class="tarima-badge" style="font-size:10px;padding:2px 7px;margin-right:3px;">${t?t.nombre:r.tarima}</span>${r.cant}pzas`;}).join(' · ');
+    return `<div class="cmp-item">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div style="font-size:13px;font-weight:700;">${i.sku}</div>
+          ${i.p?.cve?`<div style="font-size:11px;color:#e65100;font-weight:600;margin-top:1px;">${i.p.cve}</div>`:''}
+          ${tarimasLista?`<div style="font-size:11px;color:#888;margin-top:3px;">${tarimasLista}</div>`:''}
+        </div>
+        ${i.badge}
+      </div>
+      <div class="cmp-nums">
+        <div class="cmp-num"><div class="n" style="color:#1565c0;">${i.esp||'—'}</div><div class="l">Esperado</div></div>
+        <div style="color:#ddd;font-size:16px;">→</div>
+        <div class="cmp-num"><div class="n" style="color:#2e7d32;">${i.totRec??'—'}</div><div class="l">Total recibido</div></div>
+        ${diff!==null?`<div style="color:#ddd;font-size:16px;">=</div>
+        <div class="cmp-num"><div class="n" style="color:${dc};">${diff>=0?'+':''}${diff}</div><div class="l">Diferencia</div></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.setFiltro=function(f,btn){
+  filtroActivo=f;
+  document.querySelectorAll('#s-comparar button').forEach(b=>{b.style.background='#fff';b.style.color='#1a1a1a';b.style.border='1.5px solid #ddd';});
+  btn.style.background='#1a1a1a';btn.style.color='#fff';btn.style.border='1.5px solid #1a1a1a';
+  renderComparar();
+};
+
+function actualizarNBadge(){
+  if(fase!=='finalizado'){const b=document.getElementById('nbadge');if(b){b.style.display='none';}return;}
+  const allSkus=new Set([...Object.keys(pedido),...Object.values(recibidos).map(r=>r.sku)]);
+  let diffs=0;
+  allSkus.forEach(sku=>{
+    const p=pedido[sku],tot=totalRecSku(sku);
+    const recs=recDesku(sku);
+    if(!recs.length) diffs++;
+    else if(!p) diffs++;
+    else if(tot!==p.esperado) diffs++;
+  });
+  const b=document.getElementById('nbadge');
+  if(b){b.textContent=diffs;b.style.display=diffs>0?'inline':'none';}
+}
+
+// ── BUSCADOR ──
+window.buscarSKU=function(){
+  const q=document.getElementById('inp-buscar').value.trim().toUpperCase();
+  const cont=document.getElementById('resultado-buscar');
+  if(!q){cont.innerHTML='';renderResumenTarimasBuscador();return;}
+  const resultados=[];
+  const allSkus=new Set([...Object.keys(pedido),...Object.values(recibidos).map(r=>r.sku)]);
+  allSkus.forEach(sku=>{
+    const p=pedido[sku];
+    const cve=(p?.cve||'').toUpperCase();
+    if(sku.includes(q)||cve.includes(q)){
+      const recs=recDesku(sku);
+      resultados.push({sku,p,recs,cve:p?.cve||''});
+    }
+  });
+  if(!resultados.length){
+    cont.innerHTML=`<div class="card" style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:8px;">🔍</div><div style="font-size:13px;color:#888;">No se encontró "<strong>${q}</strong>"</div></div>`;
+    return;
+  }
+  cont.innerHTML=resultados.map(item=>{
+    const {sku,p,recs}=item;
+    const totRec=recs.reduce((a,r)=>a+r.cant,0);
+    const esp=p?.esperado??null;
+    let estado='⏳ No registrado',estadoColor='#888',estadoBg='#f5f5f5';
+    if(recs.length&&esp!==null){
+      if(totRec===esp){estado='✅ Cuadrado';estadoColor='#2e7d32';estadoBg='#e8f5e9';}
+      else if(totRec<esp){estado=`📉 Falta ${esp-totRec}`;estadoColor='#c62828';estadoBg='#fdecea';}
+      else{estado=`📈 Sobran ${totRec-esp}`;estadoColor='#1565c0';estadoBg='#e3f2fd';}
+    } else if(recs.length&&!p){estado='➕ Extra';estadoColor='#e65100';estadoBg='#fff3e0';}
+
+    const tarimasHTML=recs.length?recs.map(r=>{
+      const t=tarimas.find(x=>x.id===r.tarima);
+      return `<div style="background:#1a1a1a;color:#f0a500;border-radius:8px;padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;">
+        <div><div style="font-size:11px;color:#888;margin-bottom:2px;">UBICACIÓN</div><div style="font-size:18px;font-weight:700;">${t?t.nombre:r.tarima}</div></div>
+        <div style="text-align:right;"><div style="font-size:11px;color:#888;margin-bottom:2px;">CONTADOR · PZAS</div><div style="font-size:13px;font-weight:600;">${r.quien||'—'} · ${r.cant}</div></div>
+      </div>`;
+    }).join('')
+    :`<div style="background:#f5f5f5;border-radius:8px;padding:10px 14px;margin-bottom:6px;text-align:center;color:#aaa;font-size:12px;">📭 Aún no registrado en ninguna tarima</div>`;
+
+    return `<div class="card" style="border-left:4px solid ${recs.length?'#f0a500':'#ddd'};">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <div style="font-size:17px;font-weight:700;">${sku}</div>
+          ${item.cve?`<div style="font-size:12px;color:#e65100;font-weight:600;margin-top:2px;">CVE: ${item.cve}</div>`:''}
+          ${p?.cat&&p.cat!==sku?`<div style="font-size:11px;color:#888;margin-top:1px;">${p.cat}</div>`:''}
+        </div>
+        <span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:10px;background:${estadoBg};color:${estadoColor};">${estado}</span>
+      </div>
+      ${tarimasHTML}
+      <div style="display:flex;gap:16px;margin-top:6px;">
+        ${esp!==null?`<div style="text-align:center;flex:1;"><div style="font-size:18px;font-weight:700;color:#1565c0;">${esp}</div><div style="font-size:10px;color:#888;">Esperado</div></div>`:''}
+        ${recs.length?`<div style="text-align:center;flex:1;"><div style="font-size:18px;font-weight:700;color:#2e7d32;">${totRec}</div><div style="font-size:10px;color:#888;">Total recibido</div></div>`:''}
+        ${esp!==null&&recs.length?`<div style="text-align:center;flex:1;"><div style="font-size:18px;font-weight:700;color:${estadoColor};">${totRec-esp>=0?'+':''}${totRec-esp}</div><div style="font-size:10px;color:#888;">Diferencia</div></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  renderResumenTarimasBuscador();
+};
+
+function renderResumenTarimasBuscador(){
+  const cont=document.getElementById('resumen-tarimas-buscador');
+  if(!tarimas.length){cont.innerHTML='<div class="empty" style="padding:14px;">Sin tarimas definidas.</div>';return;}
+  const sorted=[...tarimas].sort((a,b)=>parseInt(a.id.replace('T',''))-parseInt(b.id.replace('T','')));
+  cont.innerHTML=sorted.map(t=>{
+    const piezas=Object.values(recibidos).filter(r=>r.tarima===t.id).sort((a,b)=>a.sku.localeCompare(b.sku));
+    if(!piezas.length) return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0;">
+      <span class="tarima-badge">${t.nombre}</span><span style="font-size:12px;color:#888;">${t.contador||'Sin asignar'}</span><span style="font-size:11px;color:#bbb;">Vacía</span></div>`;
+    const lista=piezas.map(r=>{
+      const p=pedido[r.sku];
+      const tot=totalRecSku(r.sku);
+      let dot='🟡';
+      if(p){dot=tot===p.esperado?'🟢':tot<p.esperado?'🔴':'🔵';}
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f9f9f9;font-size:12px;">
+        <span>${dot} <strong>${r.sku}</strong>${p?.cve?` <span style="color:#e65100;font-size:11px;">${p.cve}</span>`:''}</span>
+        <span style="color:#888;">${r.cant} pzas</span></div>`;
+    }).join('');
+    return `<div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #e8e8e8;margin-bottom:4px;">
+        <span class="tarima-badge">${t.nombre}</span>
+        <span style="font-size:11px;color:#888;">${t.contador||'Sin asignar'} · ${piezas.length} SKUs</span>
+      </div>${lista}</div>`;
+  }).join('');
+}
+
+// ── EXPORTAR ──
+const COLORES={CUADRADO:{fgColor:{rgb:'E8F5E9'}},FALTANTE:{fgColor:{rgb:'FDECEA'}},SOBRANTE:{fgColor:{rgb:'E3F2FD'}},EXTRA:{fgColor:{rgb:'FFF3E0'}},PENDIENTE:{fgColor:{rgb:'F5F5F5'}}};
+const FUENTES={CUADRADO:{bold:true,color:{rgb:'2E7D32'}},FALTANTE:{bold:true,color:{rgb:'C62828'}},SOBRANTE:{bold:true,color:{rgb:'1565C0'}},EXTRA:{bold:true,color:{rgb:'E65100'}},PENDIENTE:{bold:true,color:{rgb:'999999'}}};
+function cc(v,bold,bg,font){const c={v:v??'—',t:typeof v==='number'?'n':'s'};const s={};if(bold||font)s.font=font||{bold:true};if(bg)s.fill={patternType:'solid',...bg};s.alignment={vertical:'center'};if(Object.keys(s).length)c.s=s;return c;}
+
+// buildDatos: una fila por SKU con total sumado de todas las tarimas + desglose
+function buildDatos(){
+  const allSkus=[...new Set([...Object.keys(pedido),...Object.values(recibidos).map(r=>r.sku)])].sort();
+  return allSkus.map(sku=>{
+    const p=pedido[sku];
+    const recs=recDesku(sku);
+    const totRec=recs.length?totalRecSku(sku):null;
+    const esp=p?.esperado??null;
+    const diff=(esp!==null&&totRec!==null)?totRec-esp:null;
+    let estado;
+    if(totRec===null) estado='PENDIENTE';
+    else if(!p) estado='EXTRA';
+    else if(totRec===esp) estado='CUADRADO';
+    else if(totRec<esp) estado='FALTANTE';
+    else estado='SOBRANTE';
+    // Tarimas donde está este SKU (con nombre del contador)
+    const tarimasStr=recs.map(r=>{const t=tarimas.find(x=>x.id===r.tarima);return (t?t.nombre:r.tarima)+':'+r.cant+'pz';}).join(' | ');
+    const contadoresStr=recs.map(r=>r.quien||'—').filter((v,i,a)=>a.indexOf(v)===i).join(' | ');
+    return {sku,cat:p?.cat||recs[0]?.cat||'',cve:p?.cve||'',tarimas:tarimasStr||'—',contadores:contadoresStr||'—',esp,totRec,diff,estado};
+  });
+}
+
+function crearHoja(datos,soloFaltantes){
+  const HF={patternType:'solid',fgColor:{rgb:'1A1A1A'}};
+  const HT={bold:true,color:{rgb:'FFFFFF'},sz:11};
+  const headers=['SKU','CVE FAMILIA','CATEGORÍA','TARIMAS (desglose)','CONTADORES','ESPERADO','TOTAL RECIBIDO',soloFaltantes?'FALTANTE':'DIFERENCIA','ESTADO'];
+  const aoa=[headers.map(h=>({v:h,t:'s',s:{font:HT,fill:HF,alignment:{horizontal:'center',vertical:'center'}}}))];
+  datos.forEach(d=>{
+    const val=soloFaltantes?(d.esp!==null?d.esp-(d.totRec??0):null):d.diff;
+    aoa.push([cc(d.sku,true),cc(d.cve||'—'),cc(d.cat),cc(d.tarimas),cc(d.contadores||'—'),cc(d.esp??'—'),cc(d.totRec??'—'),cc(val??'—'),cc(d.estado,false,COLORES[d.estado],FUENTES[d.estado])]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:16},{wch:14},{wch:16},{wch:28},{wch:20},{wch:12},{wch:14},{wch:13},{wch:14}];
+  return ws;
+}
+function crearResumen(datos){
+  const cnt={CUADRADO:0,FALTANTE:0,SOBRANTE:0,EXTRA:0,PENDIENTE:0};
+  datos.forEach(d=>cnt[d.estado]++);
+  const HF={patternType:'solid',fgColor:{rgb:'1A1A1A'}};
+  const HT={bold:true,color:{rgb:'FFFFFF'},sz:12};
+  const aoa=[
+    [{v:'RESUMEN RECEPCIÓN — ANAUTOMY',t:'s',s:{font:{bold:true,sz:14}}}],
+    [{v:'Fecha: '+new Date().toLocaleDateString('es-MX'),t:'s',s:{font:{sz:10,color:{rgb:'888888'}}}}],
+    [],
+    [{v:'ESTADO',t:'s',s:{font:HT,fill:HF}},{v:'CANTIDAD',t:'s',s:{font:HT,fill:HF}}],
+    ...Object.entries(cnt).map(([k,v])=>[cc(k,false,COLORES[k],FUENTES[k]),cc(v,true)]),
+    [],
+    [{v:'TARIMA',t:'s',s:{font:HT,fill:HF}},{v:'CONTADOR',t:'s',s:{font:HT,fill:HF}},{v:'SKUs CONTADOS',t:'s',s:{font:HT,fill:HF}}],
+    ...[...tarimas].sort((a,b)=>parseInt(a.id.replace('T',''))-parseInt(b.id.replace('T',''))).map(t=>{
+      const n=Object.values(recibidos).filter(r=>r.tarima===t.id).length;
+      return [cc(t.nombre),cc(t.contador||'Sin asignar'),cc(n,true)];
+    }),
+    [],
+    [cc('TOTAL SKUs',true),cc(datos.length,true)],
+  ];
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:20},{wch:20},{wch:14}];
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:2}},{s:{r:1,c:0},e:{r:1,c:2}}];
+  return ws;
+}
+// Hoja "Cantidad Finalizada" — resumen por tarima con SKUs y totales recibidos
+function crearHojaCantidadFinalizada(){
+  const HF={patternType:'solid',fgColor:{rgb:'1A1A1A'}};
+  const HT={bold:true,color:{rgb:'FFFFFF'},sz:11};
+  const HFtar={patternType:'solid',fgColor:{rgb:'2D2D2D'}};
+  const sorted=[...tarimas].sort((a,b)=>parseInt(a.id.replace('T',''))-parseInt(b.id.replace('T','')));
+  const aoa=[];
+  aoa.push([{v:'CANTIDAD FINALIZADA POR TARIMA — ANAUTOMY',t:'s',s:{font:{bold:true,sz:14}}}]);
+  aoa.push([{v:'Fecha: '+new Date().toLocaleDateString('es-MX'),t:'s',s:{font:{sz:10,color:{rgb:'888888'}}}}]);
+  aoa.push([]);
+  let totalGlobalEsp=0, totalGlobalRec=0;
+  sorted.forEach(t=>{
+    const recsAll=Object.values(recibidos).filter(r=>r.tarima===t.id);
+    // Agrupar por SKU y sumar cajas
+    const porSku={};
+    recsAll.forEach(r=>{ if(!porSku[r.sku]){porSku[r.sku]={sku:r.sku,cat:r.cat,cajas:0,cant:0};} porSku[r.sku].cajas++; porSku[r.sku].cant+=r.cant; });
+    const skusEnTarima=Object.values(porSku).sort((a,b)=>a.sku.localeCompare(b.sku));
+    const fin=t.terminada===true;
+    aoa.push([
+      {v:t.nombre+(fin?' ✅':''),t:'s',s:{font:{bold:true,color:{rgb:fin?'2E7D32':'E65100'},sz:12},fill:HFtar}},
+      {v:'Contador: '+(t.contador||'Sin asignar'),t:'s',s:{font:{italic:true,color:{rgb:'AAAAAA'}},fill:HFtar}},
+      {v:'',t:'s',s:{fill:HFtar}},
+      {v:'',t:'s',s:{fill:HFtar}},
+      {v:fin?'TERMINADA':'EN PROCESO',t:'s',s:{font:{bold:true,color:{rgb:fin?'2E7D32':'E65100'}},fill:HFtar}},
+    ]);
+    aoa.push(['SKU','CVE FAMILIA','CAJAS','ESPERADO TOTAL','RECIBIDO EN ESTA TARIMA'].map(h=>({v:h,t:'s',s:{font:HT,fill:HF,alignment:{horizontal:'center'}}})));
+    let subTotalEsp=0, subTotalRec=0;
+    if(skusEnTarima.length){
+      skusEnTarima.forEach(g=>{
+        const p=pedido[g.sku];
+        const esp=p?.esperado??null;
+        subTotalEsp+=(esp||0);
+        subTotalRec+=g.cant;
+        totalGlobalEsp+=(esp||0);
+        totalGlobalRec+=g.cant;
+        const diff=esp!==null?g.cant-esp:null;
+        const dc=diff===null?'999999':diff===0?'2E7D32':diff<0?'C62828':'1565C0';
+        aoa.push([
+          cc(g.sku,true),
+          cc(p?.cve||'—'),
+          {v:g.cajas,t:'n',s:{font:{color:{rgb:'888888'}}}},
+          cc(esp??'—'),
+          {v:g.cant,t:'n',s:{font:{bold:true,color:{rgb:dc}}}},
+        ]);
+      });
+    } else {
+      aoa.push([{v:'Sin registros',t:'s',s:{font:{italic:true,color:{rgb:'AAAAAA'}}}},'','','','']);
+    }
+    aoa.push([
+      {v:'SUBTOTAL '+t.nombre,t:'s',s:{font:{bold:true},fill:{patternType:'solid',fgColor:{rgb:'F5F5F5'}}}},
+      {v:'',t:'s',s:{fill:{patternType:'solid',fgColor:{rgb:'F5F5F5'}}}},
+      {v:'',t:'s',s:{fill:{patternType:'solid',fgColor:{rgb:'F5F5F5'}}}},
+      {v:subTotalEsp,t:'n',s:{font:{bold:true},fill:{patternType:'solid',fgColor:{rgb:'F5F5F5'}}}},
+      {v:subTotalRec,t:'n',s:{font:{bold:true,color:{rgb:subTotalRec===subTotalEsp?'2E7D32':'C62828'}},fill:{patternType:'solid',fgColor:{rgb:'F5F5F5'}}}},
+    ]);
+    aoa.push([]);
+  });
+  aoa.push([
+    {v:'TOTAL GENERAL',t:'s',s:{font:{bold:true,sz:12,color:{rgb:'FFFFFF'}},fill:{patternType:'solid',fgColor:{rgb:'1A1A1A'}}}},
+    {v:'',t:'s',s:{fill:{patternType:'solid',fgColor:{rgb:'1A1A1A'}}}},
+    {v:'',t:'s',s:{fill:{patternType:'solid',fgColor:{rgb:'1A1A1A'}}}},
+    {v:totalGlobalEsp,t:'n',s:{font:{bold:true,sz:12,color:{rgb:'FFFFFF'}},fill:{patternType:'solid',fgColor:{rgb:'1A1A1A'}}}},
+    {v:totalGlobalRec,t:'n',s:{font:{bold:true,sz:12,color:{rgb:totalGlobalRec===totalGlobalEsp?'00FF88':'FF8888'}},fill:{patternType:'solid',fgColor:{rgb:'1A1A1A'}}}},
+  ]);
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:20},{wch:16},{wch:8},{wch:16},{wch:22}];
+  return ws;
+}
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:20},{wch:16},{wch:14},{wch:22}];
+  return ws;
+}
+
+window.exportCompleto=function(){const d=buildDatos(),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,crearHoja(d,false),'Reporte Completo');XLSX.utils.book_append_sheet(wb,crearHoja(d.filter(x=>x.estado!=='CUADRADO'),false),'Diferencias');XLSX.utils.book_append_sheet(wb,crearHojaCantidadFinalizada(),'Cantidad Finalizada');XLSX.utils.book_append_sheet(wb,crearResumen(d),'Resumen');XLSX.writeFile(wb,'recepcion_completa_'+new Date().toISOString().slice(0,10)+'.xlsx');};
+window.exportDiferencias=function(){const d=buildDatos().filter(x=>x.estado!=='CUADRADO'),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,crearHoja(d,false),'Diferencias');XLSX.utils.book_append_sheet(wb,crearHojaCantidadFinalizada(),'Cantidad Finalizada');XLSX.writeFile(wb,'diferencias_recepcion_'+new Date().toISOString().slice(0,10)+'.xlsx');};
+window.exportFaltantes=function(){const d=buildDatos().filter(x=>x.estado==='FALTANTE'||x.estado==='PENDIENTE'),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,crearHoja(d,true),'Faltantes');XLSX.utils.book_append_sheet(wb,crearHojaCantidadFinalizada(),'Cantidad Finalizada');XLSX.writeFile(wb,'faltantes_recepcion_'+new Date().toISOString().slice(0,10)+'.xlsx');};
+window.exportCuadrado=function(){const d=buildDatos(),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,crearHoja(d,false),'Recepción Cuadrada');XLSX.utils.book_append_sheet(wb,crearHojaCantidadFinalizada(),'Cantidad Finalizada');XLSX.utils.book_append_sheet(wb,crearResumen(d),'Resumen');XLSX.writeFile(wb,'recepcion_CUADRADA_'+new Date().toISOString().slice(0,10)+'.xlsx');};
+
+function renderResumenExp(){
+  const datos=buildDatos();
+  const cnt={CUADRADO:0,FALTANTE:0,SOBRANTE:0,EXTRA:0,PENDIENTE:0};
+  datos.forEach(d=>cnt[d.estado]++);
+  const col={CUADRADO:'#2e7d32',FALTANTE:'#c62828',SOBRANTE:'#1565c0',EXTRA:'#e65100',PENDIENTE:'#999'};
+  const lbl={CUADRADO:'✅ Cuadrados',FALTANTE:'📉 Faltantes',SOBRANTE:'📈 Sobrantes',EXTRA:'➕ Extras',PENDIENTE:'⏳ Pendientes'};
+  document.getElementById('resumen-exp').innerHTML=Object.entries(cnt).map(([k,v])=>`<div class="resumen-row"><span>${lbl[k]}</span><span style="font-weight:700;color:${col[k]}">${v}</span></div>`).join('');
+  const todoCuadrado=datos.length>0&&cnt.FALTANTE===0&&cnt.SOBRANTE===0&&cnt.EXTRA===0&&cnt.PENDIENTE===0;
+  const wrap=document.getElementById('btn-cuadrado-wrap');
+  if(wrap) wrap.style.display=todoCuadrado?'block':'none';
+}
+
+function mostrarMsg(id,txt,tipo){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.textContent=txt;el.className='msg msg-'+(tipo==='err'?'err':'ok');el.style.display='block';
+  setTimeout(()=>el.style.display='none',tipo==='ok'?4000:5000);
+}
+window.mostrarMsg=mostrarMsg;
+</script>
+</body>
+</html>
