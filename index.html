@@ -58,6 +58,16 @@ select.inp{appearance:none;-webkit-appearance:none;background-image:url("data:im
 .sku-prev.info{background:#e3f2fd;color:#1565c0;}
 .sku-prev.ok{background:#e8f5e9;color:#2e7d32;}
 .sku-prev.warn{background:#fff3e0;color:#e65100;}
+/* ── AUTOCOMPLETE ── */
+.ac-wrap{position:relative;}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid #f0a500;border-radius:10px;z-index:200;max-height:220px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.12);display:none;}
+.ac-item{padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between;align-items:center;}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:active,.ac-item.ac-selected{background:#fffbf0;}
+.ac-sku{font-weight:700;color:#1a1a1a;}
+.ac-match{color:#f0a500;}
+.ac-info{font-size:11px;color:#888;text-align:right;}
+.ac-cve{font-size:11px;color:#e65100;font-weight:600;}
 .rec-item{background:#fff;border-radius:10px;padding:12px 14px;margin-bottom:7px;border:1px solid #e8e8e8;display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .rec-sku{font-size:13px;font-weight:700;}
 .rec-cat{font-size:11px;color:#888;margin-top:1px;}
@@ -188,7 +198,10 @@ select.inp{appearance:none;-webkit-appearance:none;background-image:url("data:im
         <button class="btn-sm" onclick="limpiarTodo()" style="color:#c62828;border-color:#c62828;">🗑 Limpiar todo</button>
       </div>
       <label class="lbl">Código SKU</label>
-      <input class="inp" type="text" id="inp-sku-ped" placeholder="Ej. BV002i" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" onkeydown="if(event.key==='Enter')document.getElementById('inp-cant-ped').focus()"/>
+      <div class="ac-wrap">
+        <input class="inp" type="text" id="inp-sku-ped" placeholder="Escribe para buscar SKU..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" oninput="acShow('inp-sku-ped','ac-ped')" onkeydown="acKey(event,'inp-sku-ped','ac-ped');if(event.key==='Enter')document.getElementById('inp-cant-ped').focus()"/>
+        <div class="ac-list" id="ac-ped"></div>
+      </div>
       <div class="g2">
         <div><label class="lbl">Cantidad esperada</label><input class="inp" type="number" id="inp-cant-ped" placeholder="0" min="1" inputmode="numeric" style="font-size:22px;font-weight:700;text-align:center;" onkeydown="if(event.key==='Enter')agregarPedido()"/></div>
         <div style="display:flex;align-items:flex-end;"><button class="btn btn-dark" onclick="agregarPedido()" style="margin-top:0;">+ Agregar</button></div>
@@ -264,7 +277,10 @@ select.inp{appearance:none;-webkit-appearance:none;background-image:url("data:im
     <div class="card">
       <div class="card-title">Ubicar pieza en tarima</div>
       <p style="font-size:12px;color:#888;margin-bottom:10px;">Busca un SKU o CVE Familia para saber en qué tarima está.</p>
-      <input class="inp" type="text" id="inp-buscar" placeholder="Escribe SKU o CVE Familia..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" oninput="buscarSKU()" style="font-size:17px;margin-bottom:0;"/>
+      <div class="ac-wrap">
+        <input class="inp" type="text" id="inp-buscar" placeholder="Escribe SKU o CVE Familia..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" oninput="acShow('inp-buscar','ac-bus');buscarSKU()" onkeydown="acKey(event,'inp-buscar','ac-bus')" style="font-size:17px;margin-bottom:0;"/>
+        <div class="ac-list" id="ac-bus"></div>
+      </div>
     </div>
     <div id="resultado-buscar"></div>
     <div class="card">
@@ -314,7 +330,10 @@ select.inp{appearance:none;-webkit-appearance:none;background-image:url("data:im
       <div class="card">
         <div class="card-title">Registrar pieza</div>
         <label class="lbl">Código SKU</label>
-        <input class="inp" type="text" id="inp-sku-cap" placeholder="Ej. BV002i" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" oninput="previewSKU()" onkeydown="if(event.key==='Enter')document.getElementById('inp-cant-cap').focus()"/>
+        <div class="ac-wrap">
+          <input class="inp" type="text" id="inp-sku-cap" placeholder="Escribe para buscar SKU..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" oninput="acShow('inp-sku-cap','ac-cap');previewSKU()" onkeydown="acKey(event,'inp-sku-cap','ac-cap');if(event.key==='Enter')document.getElementById('inp-cant-cap').focus()"/>
+          <div class="ac-list" id="ac-cap"></div>
+        </div>
         <div id="prev-sku-cap" class="sku-prev"></div>
         <div class="g2">
           <div><label class="lbl">Cantidad recibida</label><input class="inp" type="number" id="inp-cant-cap" placeholder="0" min="0" inputmode="numeric" style="font-size:24px;font-weight:700;text-align:center;" onkeydown="if(event.key==='Enter')registrarRecibido()"/></div>
@@ -1155,6 +1174,88 @@ function renderResumenExp(){
   if(wrap) wrap.style.display=todoCuadrado?'block':'none';
 }
 
+// ── AUTOCOMPLETE ──
+let acIdx = -1;
+
+function acShow(inputId, listId) {
+  const inp = document.getElementById(inputId);
+  const list = document.getElementById(listId);
+  const q = inp.value.trim().toUpperCase();
+  acIdx = -1;
+
+  if (!q || q.length < 1) { list.style.display = 'none'; return; }
+
+  // Buscar en pedido por SKU o CVE
+  const matches = Object.values(pedido).filter(p =>
+    p.sku.includes(q) || (p.cve||'').toUpperCase().includes(q) || (p.cat||'').toUpperCase().includes(q)
+  ).slice(0, 10);
+
+  // También incluir SKUs ya recibidos que no estén en pedido
+  const extrasRec = [...new Set(Object.values(recibidos).map(r=>r.sku))]
+    .filter(sku => sku.includes(q) && !pedido[sku]).slice(0, 3);
+
+  if (!matches.length && !extrasRec.length) { list.style.display = 'none'; return; }
+
+  list.innerHTML = matches.map((p, i) => {
+    // Resaltar la parte que coincide
+    const skuHL = p.sku.replace(new RegExp(q,'g'), `<span class="ac-match">${q}</span>`);
+    const totRec = totalRecSku(p.sku);
+    const diff = totRec - p.esperado;
+    const diffStr = diff === 0 ? '✅' : diff < 0 ? `📉${Math.abs(diff)}` : `📈+${diff}`;
+    return `<div class="ac-item" data-sku="${p.sku}" onclick="acSelect('${inputId}','${listId}','${p.sku}')">
+      <div><div class="ac-sku">${skuHL}</div>${p.cve ? `<div class="ac-cve">${p.cve}</div>` : ''}</div>
+      <div class="ac-info"><div>${p.esperado} esp</div><div>${diffStr}</div></div>
+    </div>`;
+  }).join('') + extrasRec.map(sku => {
+    const skuHL = sku.replace(new RegExp(q,'g'), `<span class="ac-match">${q}</span>`);
+    return `<div class="ac-item" data-sku="${sku}" onclick="acSelect('${inputId}','${listId}','${sku}')">
+      <div><div class="ac-sku">${skuHL}</div><div style="font-size:11px;color:#e65100;">Extra</div></div>
+    </div>`;
+  }).join('');
+
+  list.style.display = 'block';
+}
+
+function acSelect(inputId, listId, sku) {
+  const inp = document.getElementById(inputId);
+  const list = document.getElementById(listId);
+  inp.value = sku;
+  list.style.display = 'none';
+  acIdx = -1;
+  // Disparar eventos dependiendo del input
+  if (inputId === 'inp-sku-cap') { previewSKU(); document.getElementById('inp-cant-cap').focus(); }
+  else if (inputId === 'inp-buscar') buscarSKU();
+  else if (inputId === 'inp-sku-ped') document.getElementById('inp-cant-ped').focus();
+}
+
+function acKey(e, inputId, listId) {
+  const list = document.getElementById(listId);
+  const items = list.querySelectorAll('.ac-item');
+  if (!items.length || list.style.display === 'none') return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    acIdx = Math.min(acIdx + 1, items.length - 1);
+    items.forEach((el, i) => el.classList.toggle('ac-selected', i === acIdx));
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    acIdx = Math.max(acIdx - 1, 0);
+    items.forEach((el, i) => el.classList.toggle('ac-selected', i === acIdx));
+  } else if (e.key === 'Enter' && acIdx >= 0) {
+    e.preventDefault();
+    const sku = items[acIdx].dataset.sku;
+    acSelect(inputId, listId, sku);
+  } else if (e.key === 'Escape') {
+    list.style.display = 'none'; acIdx = -1;
+  }
+}
+
+// Cerrar autocomplete al hacer clic fuera
+document.addEventListener('click', e => {
+  document.querySelectorAll('.ac-list').forEach(l => {
+    if (!l.parentElement.contains(e.target)) l.style.display = 'none';
+  });
+});
+
 function mostrarMsg(id,txt,tipo){
   const el=document.getElementById(id);
   if(!el)return;
@@ -1165,4 +1266,3 @@ window.mostrarMsg=mostrarMsg;
 </script>
 </body>
 </html>
-
