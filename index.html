@@ -768,6 +768,12 @@ window.registrarRecibido=async function(){
   const c=parseInt(document.getElementById('inp-cant-cap').value);
   if(!s){mostrarMsg('msg-cap','Ingresa un SKU','err');return;}
   if(isNaN(c)||c<0){mostrarMsg('msg-cap','Ingresa cantidad válida','err');return;}
+  // Validar que el SKU esté en el pedido
+  if(!pedido[s]){
+    mostrarMsg('msg-cap','❌ "'+s+'" no está en el pedido. Verifica el código.','err');
+    document.getElementById('inp-sku-cap').focus();
+    return;
+  }
   const btn=document.querySelector('#s-captura .btn-amber');
   btn.disabled=true; btn.textContent='...';
   const cat=pedido[s]?.cat||s;
@@ -1177,82 +1183,70 @@ function renderResumenExp(){
 // ── AUTOCOMPLETE ──
 let acIdx = -1;
 
-function acShow(inputId, listId) {
+window.acShow = function(inputId, listId) {
   const inp = document.getElementById(inputId);
   const list = document.getElementById(listId);
   const q = inp.value.trim().toUpperCase();
   acIdx = -1;
 
-  if (!q || q.length < 1) { list.style.display = 'none'; return; }
+  if (!q || q.length < 1) { list.style.display='none'; return; }
 
-  // Buscar en pedido por SKU o CVE
   const matches = Object.values(pedido).filter(p =>
     p.sku.includes(q) || (p.cve||'').toUpperCase().includes(q) || (p.cat||'').toUpperCase().includes(q)
-  ).slice(0, 10);
+  ).slice(0, 12);
 
-  // También incluir SKUs ya recibidos que no estén en pedido
-  const extrasRec = [...new Set(Object.values(recibidos).map(r=>r.sku))]
-    .filter(sku => sku.includes(q) && !pedido[sku]).slice(0, 3);
+  if (!matches.length) { list.style.display='none'; return; }
 
-  if (!matches.length && !extrasRec.length) { list.style.display = 'none'; return; }
-
-  list.innerHTML = matches.map((p, i) => {
-    // Resaltar la parte que coincide
+  list.innerHTML = matches.map((p) => {
     const skuHL = p.sku.replace(new RegExp(q,'g'), `<span class="ac-match">${q}</span>`);
-    const totRec = totalRecSku(p.sku);
+    const totRec = totalRecSku ? totalRecSku(p.sku) : 0;
     const diff = totRec - p.esperado;
-    const diffStr = diff === 0 ? '✅' : diff < 0 ? `📉${Math.abs(diff)}` : `📈+${diff}`;
+    const diffStr = diff===0 ? '✅' : diff<0 ? `📉${Math.abs(diff)}` : `📈+${diff}`;
     return `<div class="ac-item" data-sku="${p.sku}" onclick="acSelect('${inputId}','${listId}','${p.sku}')">
-      <div><div class="ac-sku">${skuHL}</div>${p.cve ? `<div class="ac-cve">${p.cve}</div>` : ''}</div>
+      <div><div class="ac-sku">${skuHL}</div>${p.cve?`<div class="ac-cve">${p.cve}</div>`:''}</div>
       <div class="ac-info"><div>${p.esperado} esp</div><div>${diffStr}</div></div>
-    </div>`;
-  }).join('') + extrasRec.map(sku => {
-    const skuHL = sku.replace(new RegExp(q,'g'), `<span class="ac-match">${q}</span>`);
-    return `<div class="ac-item" data-sku="${sku}" onclick="acSelect('${inputId}','${listId}','${sku}')">
-      <div><div class="ac-sku">${skuHL}</div><div style="font-size:11px;color:#e65100;">Extra</div></div>
     </div>`;
   }).join('');
 
   list.style.display = 'block';
-}
+};
 
-function acSelect(inputId, listId, sku) {
+window.acSelect = function(inputId, listId, sku) {
   const inp = document.getElementById(inputId);
   const list = document.getElementById(listId);
   inp.value = sku;
   list.style.display = 'none';
   acIdx = -1;
-  // Disparar eventos dependiendo del input
-  if (inputId === 'inp-sku-cap') { previewSKU(); document.getElementById('inp-cant-cap').focus(); }
-  else if (inputId === 'inp-buscar') buscarSKU();
-  else if (inputId === 'inp-sku-ped') document.getElementById('inp-cant-ped').focus();
-}
+  if (inputId==='inp-sku-cap') { previewSKU(); document.getElementById('inp-cant-cap').focus(); }
+  else if (inputId==='inp-buscar') buscarSKU();
+  else if (inputId==='inp-sku-ped') document.getElementById('inp-cant-ped').focus();
+};
 
-function acKey(e, inputId, listId) {
+window.acKey = function(e, inputId, listId) {
   const list = document.getElementById(listId);
   const items = list.querySelectorAll('.ac-item');
-  if (!items.length || list.style.display === 'none') return;
-  if (e.key === 'ArrowDown') {
+  if (!items.length || list.style.display==='none') return;
+  if (e.key==='ArrowDown') {
     e.preventDefault();
-    acIdx = Math.min(acIdx + 1, items.length - 1);
-    items.forEach((el, i) => el.classList.toggle('ac-selected', i === acIdx));
-  } else if (e.key === 'ArrowUp') {
+    acIdx = Math.min(acIdx+1, items.length-1);
+    items.forEach((el,i) => el.classList.toggle('ac-selected', i===acIdx));
+  } else if (e.key==='ArrowUp') {
     e.preventDefault();
-    acIdx = Math.max(acIdx - 1, 0);
-    items.forEach((el, i) => el.classList.toggle('ac-selected', i === acIdx));
-  } else if (e.key === 'Enter' && acIdx >= 0) {
+    acIdx = Math.max(acIdx-1, 0);
+    items.forEach((el,i) => el.classList.toggle('ac-selected', i===acIdx));
+  } else if (e.key==='Enter' && acIdx>=0) {
     e.preventDefault();
     const sku = items[acIdx].dataset.sku;
     acSelect(inputId, listId, sku);
-  } else if (e.key === 'Escape') {
-    list.style.display = 'none'; acIdx = -1;
+  } else if (e.key==='Escape') {
+    list.style.display='none'; acIdx=-1;
   }
-}
+};
 
 // Cerrar autocomplete al hacer clic fuera
 document.addEventListener('click', e => {
   document.querySelectorAll('.ac-list').forEach(l => {
-    if (!l.parentElement.contains(e.target)) l.style.display = 'none';
+    if (!l.parentElement.contains(e.target)) l.style.display='none';
   });
 });
 
