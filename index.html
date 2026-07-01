@@ -740,25 +740,29 @@ function renderMonitor(){
 window.previewSKU=function(){
   const v=document.getElementById('inp-sku-cap').value.trim().toUpperCase();
   const prev=document.getElementById('prev-sku-cap');
-  if(!v){prev.style.display='none';return;}
+  const btn=document.querySelector('#s-captura .btn-amber');
+  if(!v){prev.style.display='none';if(btn){btn.disabled=false;btn.style.opacity='1';}return;}
   const p=pedido[v];
+  if(!p){
+    prev.className='sku-prev warn';
+    prev.textContent='❌ Código no encontrado en el pedido. Solo el supervisor puede agregar productos.';
+    prev.style.display='block';
+    if(btn){btn.disabled=true;btn.style.opacity='.4';}
+    return;
+  }
+  if(btn){btn.disabled=false;btn.style.opacity='1';}
   const yaEnMiTarima=totalRecSkuTarima(v,miTarima);
   const totGlobal=totalRecSku(v);
   const totOtrasTarimas=totGlobal-yaEnMiTarima;
-  if(p){
-    let txt=`📋 Esperado total: ${p.esperado}`;
-    if(totOtrasTarimas>0) txt+=` · En otras tarimas: ${totOtrasTarimas}`;
-    if(yaEnMiTarima>0) txt+=` · En mi tarima: ${yaEnMiTarima}`;
-    const resta=p.esperado-totGlobal;
-    if(resta>0) txt+=` · Faltan: ${resta}`;
-    else if(resta===0) txt=' ✅ Ya cuadrado entre todas las tarimas';
-    else txt+=` · Sobran: ${Math.abs(resta)}`;
-    prev.className='sku-prev '+(resta>0?'info':resta===0?'ok':'warn');
-    prev.textContent=txt;
-  } else {
-    prev.className='sku-prev warn';
-    prev.textContent='⚠️ No está en el pedido — se registrará como extra';
-  }
+  let txt=`📋 Esperado total: ${p.esperado}`;
+  if(totOtrasTarimas>0) txt+=` · En otras tarimas: ${totOtrasTarimas}`;
+  if(yaEnMiTarima>0) txt+=` · En mi tarima: ${yaEnMiTarima}`;
+  const resta=p.esperado-totGlobal;
+  if(resta>0) txt+=` · Faltan: ${resta}`;
+  else if(resta===0) txt=' ✅ Ya cuadrado entre todas las tarimas';
+  else txt+=` · Sobran: ${Math.abs(resta)}`;
+  prev.className='sku-prev '+(resta>0?'info':resta===0?'ok':'warn');
+  prev.textContent=txt;
   prev.style.display='block';
 };
 
