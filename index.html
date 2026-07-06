@@ -172,7 +172,6 @@ select.inp{appearance:none;-webkit-appearance:none;background-image:url("data:im
     <button class="tab" onclick="showTab('s-comparar',this)">🔍 Dif. <span class="nbadge" id="nbadge" style="display:none">0</span></button>
     <button class="tab" onclick="showTab('s-buscador',this)">🔎 Ubicar</button>
     <button class="tab" onclick="showTab('s-exportar',this)">📥 Excel</button>
-    <button class="tab" onclick="showTab('s-historial',this)">📚 Historial</button>
   </div>
 
   <div class="tabs" id="tabs-cnt" style="display:none;">
@@ -182,20 +181,7 @@ select.inp{appearance:none;-webkit-appearance:none;background-image:url("data:im
 
   <!-- PEDIDO -->
   <div id="s-pedido" class="screen active">
-    <div class="card" style="background:#fffbf0;border-color:#f0a500;">
-      <div class="card-title">Identificación del pedido</div>
-      <div class="g2">
-        <div>
-          <label class="lbl">Número de pedido</label>
-          <input class="inp" type="text" id="inp-num-pedido" placeholder="Ej. PED-2024-001" autocomplete="off" style="font-weight:700;"/>
-        </div>
-        <div>
-          <label class="lbl">Fecha</label>
-          <input class="inp" type="date" id="inp-fecha-pedido"/>
-        </div>
-      </div>
-      <div id="pedido-activo-badge" style="display:none;background:#1a1a1a;color:#f0a500;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;margin-top:4px;"></div>
-    </div>
+    <div class="card">
       <div class="card-title">Cargar pedido esperado</div>
       <p style="font-size:12px;color:#888;margin-bottom:12px;">Sube el Excel o CSV con columnas <strong>SKU</strong>, <strong>CANTIDAD</strong> y opcionalmente <strong>CVE FAMILIA</strong>.</p>
       <div class="drop-zone" onclick="document.getElementById('file-inp').click()">
@@ -311,7 +297,6 @@ select.inp{appearance:none;-webkit-appearance:none;background-image:url("data:im
       <div id="btn-cuadrado-wrap" style="display:none;">
         <button class="exp-btn exp-green" onclick="exportCuadrado()">✅ Todo cuadrado — Reporte final (.xlsx)</button>
       </div>
-      <button class="exp-btn" onclick="guardarEnHistorial()" style="background:#1565c0;color:#fff;margin-bottom:8px;">💾 Guardar pedido en historial</button>
       <button class="exp-btn exp-amber" onclick="exportCompleto()">📥 Reporte completo (.xlsx)</button>
       <button class="exp-btn exp-out" onclick="exportDiferencias()">⚠️ Solo diferencias (.xlsx)</button>
       <button class="exp-btn exp-dark" onclick="exportFaltantes()">📉 Solo faltantes (.xlsx)</button>
@@ -320,15 +305,6 @@ select.inp{appearance:none;-webkit-appearance:none;background-image:url("data:im
       <div class="card-title">Resumen</div>
       <div id="resumen-exp"></div>
     </div>
-  </div>
-
-  <!-- HISTORIAL -->
-  <div id="s-historial" class="screen">
-    <div class="card">
-      <div class="card-title">Buscar en historial</div>
-      <input class="inp" type="text" id="inp-hist-buscar" placeholder="Buscar por N° pedido, SKU o CVE..." oninput="renderHistorial()" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
-    </div>
-    <div id="lista-historial"><div class="empty">Cargando historial...</div></div>
   </div>
 
   <!-- CAPTURA CONTADOR -->
@@ -414,8 +390,6 @@ const db = getDatabase(app);
 // recibidos ahora usa clave "SKU__TARIMAID" para permitir mismo SKU en varias tarimas
 let rol=null, miNombre='', miTarima=null, filtroActivo='todos';
 let pedido={}, recibidos={}, tarimas=[], fase='conteo';
-let numPedidoActual='', fechaPedidoActual='';
-let historial=[];
 
 function fbSet(path,data){ return set(ref(db,path),data).catch(e=>console.error(e)); }
 async function fbGet(path){ try{const s=await get(ref(db,path));return s.exists()?s.val():null;}catch(e){return null;} }
@@ -437,10 +411,6 @@ function totalRecSku(sku){ return recDesku(sku).reduce((a,r)=>a+r.cant,0); }
 async function init(){
   document.getElementById('loading-screen').style.display='none';
   document.getElementById('login-screen').style.display='block';
-  // Set today's date as default
-  const today=new Date().toISOString().slice(0,10);
-  const fechaInp=document.getElementById('inp-fecha-pedido');
-  if(fechaInp) fechaInp.value=today;
   fbListen('tarimas', val=>{
     tarimas.length=0;
     if(val) tarimas.push(...Object.values(val));
@@ -448,7 +418,6 @@ async function init(){
     if(rol==='supervisor'){ renderTarimasSup(); }
   });
   fbListen('fase', val=>{ fase=val||'conteo'; actualizarFaseBadge(); if(rol==='supervisor')actualizarNBadge(); if(rol==='contador')mostrarEstadoConteo(); });
-  fbListen('historial', val=>{ historial=val?Object.values(val):[]; });
 }
 init();
 
@@ -587,7 +556,6 @@ window.showTab=function(id,btn){
   if(id==='s-monitor')renderMonitor();
   if(id==='s-buscador'){renderResumenTarimasBuscador();}
   if(id==='s-mis')renderMisPiezas();
-  if(id==='s-historial')renderHistorial();
 };
 
 // ── CARGAR ARCHIVO ──
@@ -627,104 +595,12 @@ window.agregarPedido=async function(){
 };
 window.eliminarPedido=async function(sku){delete pedido[sku];await fbSet('pedido',pedido);renderPedido();actualizarNBadge();};
 window.limpiarTodo=async function(){
-  if(!confirm('¿Borrar todo el pedido, registros y tarimas?\nAsegúrate de haberlo guardado en el historial primero.'))return;
+  if(!confirm('¿Borrar todo el pedido, registros y tarimas?'))return;
   Object.keys(pedido).forEach(k=>delete pedido[k]);
   Object.keys(recibidos).forEach(k=>delete recibidos[k]);
   tarimas.length=0; fase='conteo';
   await fbSet('pedido',{});await fbSet('recibidos',{});await fbSet('tarimas',{});await fbSet('fase','conteo');
   renderPedido();renderTarimasSup();actualizarNBadge();actualizarFaseBadge();
-  // Reset número de pedido
-  const ni=document.getElementById('inp-num-pedido'); if(ni) ni.value='';
-  const fi=document.getElementById('inp-fecha-pedido'); if(fi) fi.value=new Date().toISOString().slice(0,10);
-  document.getElementById('pedido-activo-badge').style.display='none';
-};
-
-window.guardarEnHistorial=async function(){
-  const numPed=document.getElementById('inp-num-pedido')?.value.trim();
-  const fechaPed=document.getElementById('inp-fecha-pedido')?.value||new Date().toISOString().slice(0,10);
-  if(!numPed){ mostrarMsg('resumen-exp','⚠️ Escribe el número de pedido antes de guardar','err'); return; }
-  if(!Object.keys(pedido).length){ mostrarMsg('resumen-exp','No hay datos en el pedido para guardar','err'); return; }
-  const datos=buildDatos();
-  const entrada={
-    id: numPed.replace(/[^a-zA-Z0-9\-_]/g,'_')+'__'+Date.now(),
-    numPedido: numPed,
-    fecha: fechaPed,
-    fechaGuardado: new Date().toISOString(),
-    supervisor: miNombre,
-    totalSkus: datos.length,
-    cuadrados: datos.filter(d=>d.estado==='CUADRADO').length,
-    faltantes: datos.filter(d=>d.estado==='FALTANTE').length,
-    sobrantes: datos.filter(d=>d.estado==='SOBRANTE').length,
-    pendientes: datos.filter(d=>d.estado==='PENDIENTE').length,
-    tarimas: tarimas.map(t=>({nombre:t.nombre,contador:t.contador||'—',terminada:t.terminada||false})),
-    datos: datos,
-  };
-  await fbSet('historial/'+entrada.id, entrada);
-  // Update badge
-  const badge=document.getElementById('pedido-activo-badge');
-  if(badge){ badge.textContent='✅ Guardado: Pedido '+numPed+' · '+new Date(fechaPed).toLocaleDateString('es-MX'); badge.style.display='block'; }
-  mostrarMsg('resumen-exp','✅ Pedido '+numPed+' guardado en el historial','ok');
-};
-
-window.renderHistorial=function(){
-  const cont=document.getElementById('lista-historial');
-  if(!cont)return;
-  const q=(document.getElementById('inp-hist-buscar')?.value||'').trim().toUpperCase();
-  const sorted=[...historial].sort((a,b)=>b.fechaGuardado.localeCompare(a.fechaGuardado));
-  const filtrado=q?sorted.filter(h=>
-    (h.numPedido||'').toUpperCase().includes(q)||
-    (h.fecha||'').includes(q)||
-    (h.supervisor||'').toUpperCase().includes(q)||
-    (h.datos||[]).some(d=>d.sku.includes(q)||(d.cve||'').toUpperCase().includes(q))
-  ):sorted;
-  if(!filtrado.length){
-    cont.innerHTML='<div class="empty">No hay pedidos guardados aún.<br><br>Ve a la pestaña 📥 Excel y toca<br><strong>💾 Guardar pedido en historial</strong></div>';
-    return;
-  }
-  cont.innerHTML=filtrado.map(h=>{
-    const fecha=new Date(h.fecha).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
-    const guardado=new Date(h.fechaGuardado).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-    const pct=h.totalSkus?Math.round(h.cuadrados/h.totalSkus*100):0;
-    const color=pct===100?'#2e7d32':pct>=70?'#f0a500':'#c62828';
-    return `<div class="card" style="margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
-        <div>
-          <div style="font-size:16px;font-weight:700;">📦 ${h.numPedido}</div>
-          <div style="font-size:11px;color:#888;margin-top:2px;">Fecha: ${fecha} · Guardado: ${guardado}</div>
-          <div style="font-size:11px;color:#888;">Supervisor: ${h.supervisor||'—'}</div>
-        </div>
-        <div style="text-align:center;background:${color};color:#fff;border-radius:8px;padding:6px 12px;">
-          <div style="font-size:18px;font-weight:700;">${pct}%</div>
-          <div style="font-size:10px;">cuadrado</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;font-size:12px;">
-        <span style="color:#2e7d32;">✅ ${h.cuadrados} OK</span>
-        <span style="color:#c62828;">📉 ${h.faltantes} faltantes</span>
-        <span style="color:#1565c0;">📈 ${h.sobrantes} sobrantes</span>
-        <span style="color:#999;">⏳ ${h.pendientes} pendientes</span>
-        <span style="color:#888;">· ${h.totalSkus} SKUs total</span>
-      </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
-        ${(h.tarimas||[]).map(t=>`<span class="tarima-badge" style="${t.terminada?'background:#2e7d32;':''}">${t.nombre}${t.terminada?' ✅':''}</span>`).join('')}
-      </div>
-      <details style="margin-top:6px;">
-        <summary style="font-size:12px;color:#888;cursor:pointer;">Ver detalle de SKUs</summary>
-        <div style="margin-top:8px;max-height:300px;overflow-y:auto;">
-          ${(h.datos||[]).map(d=>{
-            const col=d.estado==='CUADRADO'?'#2e7d32':d.estado==='FALTANTE'?'#c62828':d.estado==='SOBRANTE'?'#1565c0':d.estado==='EXTRA'?'#e65100':'#999';
-            return `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f5f5f5;font-size:12px;">
-              <span><strong>${d.sku}</strong>${d.cve?' <span style="color:#e65100;font-size:10px;">'+d.cve+'</span>':''}</span>
-              <span style="display:flex;gap:10px;align-items:center;">
-                <span style="color:#888;">${d.esp??'—'} esp · ${d.totRec??'—'} rec</span>
-                <span style="font-weight:700;color:${col};">${d.estado}</span>
-              </span>
-            </div>`;
-          }).join('')}
-        </div>
-      </details>
-    </div>`;
-  }).join('');
 };
 
 function renderPedido(){
