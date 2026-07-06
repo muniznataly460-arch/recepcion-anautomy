@@ -172,11 +172,13 @@ select.inp{appearance:none;-webkit-appearance:none;background-image:url("data:im
     <button class="tab" onclick="showTab('s-comparar',this)">🔍 Dif. <span class="nbadge" id="nbadge" style="display:none">0</span></button>
     <button class="tab" onclick="showTab('s-buscador',this)">🔎 Ubicar</button>
     <button class="tab" onclick="showTab('s-exportar',this)">📥 Excel</button>
+    <button class="tab" onclick="showTab('s-historial',this)">📚 Historial</button>
   </div>
 
   <div class="tabs" id="tabs-cnt" style="display:none;">
     <button class="tab active" onclick="showTab('s-captura',this)">📦 Captura</button>
     <button class="tab" onclick="showTab('s-mis',this)">📋 Mi tarima</button>
+    <button class="tab" onclick="showTab('s-historial',this)">📚 Historial</button>
   </div>
 
   <!-- PEDIDO -->
@@ -300,11 +302,21 @@ select.inp{appearance:none;-webkit-appearance:none;background-image:url("data:im
       <button class="exp-btn exp-amber" onclick="exportCompleto()">📥 Reporte completo (.xlsx)</button>
       <button class="exp-btn exp-out" onclick="exportDiferencias()">⚠️ Solo diferencias (.xlsx)</button>
       <button class="exp-btn exp-dark" onclick="exportFaltantes()">📉 Solo faltantes (.xlsx)</button>
+      <button class="exp-btn" onclick="guardarEnHistorial()" style="background:#1565c0;color:#fff;margin-top:4px;">💾 Guardar pedido en historial</button>
     </div>
     <div class="card">
       <div class="card-title">Resumen</div>
       <div id="resumen-exp"></div>
     </div>
+  </div>
+
+  <!-- HISTORIAL -->
+  <div id="s-historial" class="screen">
+    <div class="card">
+      <div class="card-title">Historial de contenedores</div>
+      <input class="inp" type="text" id="inp-hist-buscar" placeholder="Buscar por nombre, N° pedido, SKU o CVE..." oninput="renderHistorial()" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="margin-bottom:0;"/>
+    </div>
+    <div id="lista-historial"><div class="empty">Cargando historial...</div></div>
   </div>
 
   <!-- CAPTURA CONTADOR -->
@@ -390,6 +402,7 @@ const db = getDatabase(app);
 // recibidos ahora usa clave "SKU__TARIMAID" para permitir mismo SKU en varias tarimas
 let rol=null, miNombre='', miTarima=null, filtroActivo='todos';
 let pedido={}, recibidos={}, tarimas=[], fase='conteo';
+let historial=[];
 
 function fbSet(path,data){ return set(ref(db,path),data).catch(e=>console.error(e)); }
 async function fbGet(path){ try{const s=await get(ref(db,path));return s.exists()?s.val():null;}catch(e){return null;} }
@@ -418,6 +431,7 @@ async function init(){
     if(rol==='supervisor'){ renderTarimasSup(); }
   });
   fbListen('fase', val=>{ fase=val||'conteo'; actualizarFaseBadge(); if(rol==='supervisor')actualizarNBadge(); if(rol==='contador')mostrarEstadoConteo(); });
+  fbListen('historial', val=>{ historial=val?Object.values(val).sort((a,b)=>b.fechaGuardado.localeCompare(a.fechaGuardado)):[];});
 }
 init();
 
@@ -556,6 +570,7 @@ window.showTab=function(id,btn){
   if(id==='s-monitor')renderMonitor();
   if(id==='s-buscador'){renderResumenTarimasBuscador();}
   if(id==='s-mis')renderMisPiezas();
+  if(id==='s-historial')renderHistorial();
 };
 
 // ── CARGAR ARCHIVO ──
@@ -608,9 +623,72 @@ function renderPedido(){
   document.getElementById('tabla-pedido-wrap').style.display=keys.length?'block':'none';
   document.getElementById('tbody-pedido').innerHTML=keys.map(k=>{
     const p=pedido[k];
-    return `<tr><td style="padding:8px 14px;font-weight:700;font-size:13px;">${p.sku}</td><td style="padding:8px 14px;font-size:12px;color:#888;">${p.cve||'—'}</td><td style="padding:8px 14px;text-align:center;font-weight:700;color:#1565c0;">${p.esperado}</td><td style="padding:8px 14px;text-align:right;"><button class="btn-del" onclick="eliminarPedido('${k}')">×</button></td></tr>`;
+    const nota=p.nota?`<div style="font-size:10px;color:#e65100;margin-top:2px;">📝 ${p.nota}</div>`:'';
+    const ajuste=p.ajuste?`<div style="font-size:10px;color:#1565c0;">Original: ${p.ajuste}</div>`:'';
+    return `<tr>
+      <td style="padding:8px 14px;font-weight:700;font-size:13px;">${p.sku}${nota}</td>
+      <td style="padding:8px 14px;font-size:12px;color:#888;">${p.cve||'—'}</td>
+      <td style="padding:8px 14px;text-align:center;font-weight:700;color:#1565c0;">${p.esperado}${ajuste}</td>
+      <td style="padding:8px 14px;text-align:right;display:flex;gap:4px;justify-content:flex-end;">
+        <button onclick="abrirEditarSKU('${k}')" style="background:#f0f0f0;border:none;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;">✏️</button>
+        <button class="btn-del" onclick="eliminarPedido('${k}')">×</button>
+      </td>
+    </tr>`;
   }).join('');
 }
+
+// ── EDITAR SKU ──
+window.abrirEditarSKU=function(sku){
+  const p=pedido[sku];
+  if(!p)return;
+  // Crear modal
+  const overlay=document.createElement('div');
+  overlay.id='edit-overlay';
+  overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML=`
+    <div style="background:#fff;border-radius:14px;padding:20px;width:100%;max-width:360px;">
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px;">✏️ Editar SKU</div>
+      <div style="font-size:13px;color:#888;margin-bottom:16px;">${sku} ${p.cve?'· '+p.cve:''}</div>
+      <label style="font-size:11px;color:#777;font-weight:600;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px;">Cantidad esperada</label>
+      <div style="font-size:11px;color:#aaa;margin-bottom:6px;">Cantidad original: ${p.ajuste||p.esperado}</div>
+      <input id="edit-cant" type="number" min="0" inputmode="numeric" value="${p.esperado}"
+        style="width:100%;padding:12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:24px;font-weight:700;text-align:center;margin-bottom:12px;"/>
+      <label style="font-size:11px;color:#777;font-weight:600;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px;">Motivo del ajuste</label>
+      <input id="edit-nota" type="text" placeholder="Ej. Proveedor envió solo 2 de 5" value="${p.nota||''}"
+        style="width:100%;padding:11px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;margin-bottom:16px;"/>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button onclick="cerrarEditarSKU()" style="padding:12px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;background:#fff;">Cancelar</button>
+        <button onclick="guardarEditarSKU('${sku}')" style="padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;background:#f0a500;color:#1a1a1a;">Guardar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('edit-cant').focus();
+  document.getElementById('edit-cant').select();
+};
+
+window.cerrarEditarSKU=function(){
+  const el=document.getElementById('edit-overlay');
+  if(el)el.remove();
+};
+
+window.guardarEditarSKU=async function(sku){
+  const nuevaCant=parseInt(document.getElementById('edit-cant').value);
+  const nota=document.getElementById('edit-nota').value.trim();
+  if(isNaN(nuevaCant)||nuevaCant<0){return;}
+  const p=pedido[sku];
+  // Guardar cantidad original si es la primera vez que se edita
+  if(!p.ajuste) p.ajuste=p.esperado;
+  p.esperado=nuevaCant;
+  p.nota=nota||'';
+  p.editado=true;
+  p.editadoPor=miNombre;
+  p.editadoTs=new Date().toISOString();
+  await fbSet('pedido/'+sku,p);
+  cerrarEditarSKU();
+  renderPedido();
+  actualizarNBadge();
+  mostrarMsg('msg-ped','✅ '+sku+' actualizado: '+nuevaCant+' pzas'+(nota?' · "'+nota+'"':''),'ok');
+};
 
 // ── TARIMAS — agregar sin borrar las existentes ──
 window.agregarTarimas=async function(){
@@ -664,6 +742,20 @@ window.reabrirConteo=async function(){
   actualizarFaseBadge(); actualizarNBadge();
 };
 
+window.limpiarTarimasVacias=async function(){
+  const vacias=tarimas.filter(t=>!Object.values(recibidos).some(r=>r.tarima===t.id));
+  if(!vacias.length){ return; }
+  if(!confirm(`¿Eliminar ${vacias.length} tarima${vacias.length>1?'s':''} vacía${vacias.length>1?'s':''}?\n\n${vacias.map(t=>t.nombre).join(', ')}`)) return;
+  for(const t of vacias){
+    const idx=tarimas.indexOf(t);
+    if(idx>-1) tarimas.splice(idx,1);
+    await fbSet('tarimas/'+t.id, null);
+  }
+  renderMonitor();
+  renderTarimasSup();
+  mostrarMsg('msg-monitor',`✅ ${vacias.length} tarima${vacias.length>1?'s':''} vacía${vacias.length>1?'s':''} eliminada${vacias.length>1?'s':''}`, 'ok');
+};
+
 function renderMonitor(){
   // Calcular totales por SKU sumando todas las tarimas
   const skusPedido=Object.keys(pedido);
@@ -686,17 +778,21 @@ function renderMonitor(){
 
   const cont=document.getElementById('monitor-tarimas');
 
-  // Botón finalizar/reabrir
+  // Botón finalizar/reabrir + limpiar tarimas vacías
+  const tarimasVacias=tarimas.filter(t=>!Object.values(recibidos).some(r=>r.tarima===t.id));
+  const btnLimpiar=tarimasVacias.length
+    ?`<button class="btn btn-outline" onclick="limpiarTarimasVacias()" style="margin-bottom:8px;color:#888;border-color:#ddd;font-size:13px;">🗑 Eliminar ${tarimasVacias.length} tarima${tarimasVacias.length>1?'s':''} vacía${tarimasVacias.length>1?'s':''}</button>`
+    :'';
   const btnFin=fase==='conteo'
-    ?`<button class="btn btn-red" onclick="finalizarConteo()" style="margin-bottom:12px;">🔒 Finalizar conteo y ver diferencias</button>`
-    :`<button class="btn btn-outline" onclick="reabrirConteo()" style="margin-bottom:12px;color:#e65100;border-color:#e65100;">🔓 Reabrir conteo</button>`;
+    ?`<button class="btn btn-red" onclick="finalizarConteo()" style="margin-bottom:8px;">🔒 Finalizar conteo y ver diferencias</button>`
+    :`<button class="btn btn-outline" onclick="reabrirConteo()" style="margin-bottom:8px;color:#e65100;border-color:#e65100;">🔓 Reabrir conteo</button>`;
   const msgMon=`<div id="msg-monitor" class="msg msg-ok" style="margin-bottom:10px;"></div>`;
 
-  if(!tarimas.length){cont.innerHTML=btnFin+msgMon+'<div class="empty">Crea tarimas en la pestaña Pedido.</div>';return;}
+  if(!tarimas.length){cont.innerHTML=btnFin+btnLimpiar+msgMon+'<div class="empty">Crea tarimas en la pestaña Pedido.</div>';return;}
   const sorted=[...tarimas].sort((a,b)=>parseInt(a.id.replace('T',''))-parseInt(b.id.replace('T','')));
   // Encontrar la primera tarima no terminada (la que sigue)
   const proximaIdx=sorted.findIndex(t=>!t.terminada);
-  cont.innerHTML=btnFin+msgMon+sorted.map((t,idx)=>{
+  cont.innerHTML=btnFin+btnLimpiar+msgMon+sorted.map((t,idx)=>{
     const recs=Object.values(recibidos).filter(r=>r.tarima===t.id);
     const totalSku=skusPedido.length;
     const pct=totalSku?Math.min(100,Math.round(recs.length/totalSku*100)):0;
@@ -912,6 +1008,8 @@ function renderComparar(){
         <div>
           <div style="font-size:13px;font-weight:700;">${i.sku}</div>
           ${i.p?.cve?`<div style="font-size:11px;color:#e65100;font-weight:600;margin-top:1px;">${i.p.cve}</div>`:''}
+          ${i.p?.nota?`<div style="font-size:11px;color:#e65100;margin-top:1px;">📝 ${i.p.nota}</div>`:''}
+          ${i.p?.ajuste?`<div style="font-size:11px;color:#aaa;margin-top:1px;">Original: ${i.p.ajuste} → Ajustado: ${i.p.esperado}</div>`:''}
           ${tarimasLista?`<div style="font-size:11px;color:#888;margin-top:3px;">${tarimasLista}</div>`:''}
         </div>
         ${i.badge}
@@ -1253,6 +1351,97 @@ document.addEventListener('click', e => {
     if (!l.parentElement.contains(e.target)) l.style.display='none';
   });
 });
+
+// ── HISTORIAL ──
+window.guardarEnHistorial=async function(){
+  if(!Object.keys(pedido).length){ mostrarMsg('resumen-exp','No hay datos en el pedido para guardar','err'); return; }
+  const nombre=prompt('Nombre del contenedor o pedido:\n(Ej. Contenedor Julio-01 / PED-2026-047)','');
+  if(!nombre||!nombre.trim()){ return; }
+  const datos=buildDatos();
+  const id='ped__'+Date.now();
+  const entrada={
+    id, nombre:nombre.trim(),
+    fecha: new Date().toISOString().slice(0,10),
+    fechaGuardado: new Date().toISOString(),
+    supervisor: miNombre,
+    totalSkus: datos.length,
+    cuadrados: datos.filter(d=>d.estado==='CUADRADO').length,
+    faltantes: datos.filter(d=>d.estado==='FALTANTE').length,
+    sobrantes: datos.filter(d=>d.estado==='SOBRANTE').length,
+    pendientes: datos.filter(d=>d.estado==='PENDIENTE').length,
+    tarimas: tarimas.map(t=>({nombre:t.nombre,contador:t.contador||'—',terminada:t.terminada||false})),
+    datos: datos,
+  };
+  await fbSet('historial/'+id, entrada);
+  mostrarMsg('resumen-exp','✅ Guardado en historial: "'+nombre.trim()+'"','ok');
+};
+
+window.renderHistorial=function(){
+  const cont=document.getElementById('lista-historial');
+  if(!cont)return;
+  const q=(document.getElementById('inp-hist-buscar')?.value||'').trim().toUpperCase();
+  const lista=q?historial.filter(h=>
+    (h.nombre||'').toUpperCase().includes(q)||
+    (h.fecha||'').includes(q)||
+    (h.supervisor||'').toUpperCase().includes(q)||
+    (h.datos||[]).some(d=>d.sku.includes(q)||(d.cve||'').toUpperCase().includes(q))
+  ):historial;
+
+  if(!lista.length){
+    cont.innerHTML=`<div class="card" style="text-align:center;padding:28px;">
+      <div style="font-size:32px;margin-bottom:10px;">📚</div>
+      <div style="font-size:14px;font-weight:500;margin-bottom:6px;">${q?'Sin resultados':'Sin pedidos guardados'}</div>
+      <p style="font-size:12px;color:#888;">${q?'Intenta con otro término.':'Ve a la pestaña 📥 Excel y toca<br><strong>💾 Guardar pedido en historial</strong>'}</p>
+    </div>`;
+    return;
+  }
+
+  cont.innerHTML=lista.map(h=>{
+    const pct=h.totalSkus?Math.round(h.cuadrados/h.totalSkus*100):0;
+    const pctColor=pct===100?'#2e7d32':pct>=70?'#e65100':'#c62828';
+    const pctBg=pct===100?'#e8f5e9':pct>=70?'#fff3e0':'#fdecea';
+    const fecha=new Date(h.fecha+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+    return `<div class="card" style="margin-bottom:10px;" id="hcard-${h.id}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:15px;font-weight:700;">📦 ${h.nombre}</div>
+          <div style="font-size:11px;color:#888;margin-top:2px;">${fecha} · ${h.supervisor||'—'}</div>
+        </div>
+        <div style="text-align:center;background:${pctBg};color:${pctColor};border-radius:8px;padding:6px 10px;margin-left:10px;flex-shrink:0;">
+          <div style="font-size:18px;font-weight:700;">${pct}%</div>
+          <div style="font-size:10px;">cuadrado</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;margin-bottom:10px;">
+        <span style="color:#2e7d32;">✅ ${h.cuadrados} OK</span>
+        <span style="color:#c62828;">📉 ${h.faltantes} faltantes</span>
+        <span style="color:#1565c0;">📈 ${h.sobrantes} sobrantes</span>
+        <span style="color:#999;">⏳ ${h.pendientes} pend.</span>
+        <span style="color:#888;">· ${h.totalSkus} SKUs</span>
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;">
+        ${(h.tarimas||[]).map(t=>`<span class="tarima-badge" style="${t.terminada?'background:#2e7d32;':''}">${t.nombre}${t.terminada?' ✅':''}</span>`).join('')}
+      </div>
+      <details>
+        <summary style="font-size:12px;color:#888;cursor:pointer;list-style:none;">▼ Ver detalle de SKUs</summary>
+        <div style="margin-top:8px;max-height:300px;overflow-y:auto;">
+          ${(h.datos||[]).map(d=>{
+            const col=d.estado==='CUADRADO'?'#2e7d32':d.estado==='FALTANTE'?'#c62828':d.estado==='SOBRANTE'?'#1565c0':d.estado==='EXTRA'?'#e65100':'#999';
+            const bg=d.estado==='CUADRADO'?'#e8f5e9':d.estado==='FALTANTE'?'#fdecea':d.estado==='SOBRANTE'?'#e3f2fd':d.estado==='EXTRA'?'#fff3e0':'#f5f5f5';
+            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f5f5f5;font-size:12px;">
+              <span><strong>${d.sku}</strong>${d.cve?' <span style="color:#e65100;font-size:10px;">'+d.cve+'</span>':''}
+              ${d.tarimas&&d.tarimas!=='—'?`<div style="font-size:10px;color:#888;">${d.tarimas}</div>`:''}</span>
+              <span style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+                <span style="color:#888;">${d.esp??'—'} esp · ${d.totRec??'—'} rec</span>
+                <span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:8px;background:${bg};color:${col};">${d.estado}</span>
+              </span>
+            </div>`;
+          }).join('')}
+        </div>
+      </details>
+    </div>`;
+  }).join('');
+};
 
 function mostrarMsg(id,txt,tipo){
   const el=document.getElementById(id);
