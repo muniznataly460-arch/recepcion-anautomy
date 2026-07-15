@@ -991,13 +991,24 @@ function renderMisPiezas(){
         ${badge}
       </div>
     </div>`;
-    // Si hay más de una entrada, mostrar el desglose por caja
+    // Botones editar/borrar
+    const r0=entradas[0];
+    const rkey0=Object.keys(recibidos).find(k=>recibidos[k]===r0)||'';
+    html+=`<div style="display:flex;gap:6px;margin-top:8px;padding:0 0 4px;">
+      <button onclick="editarRegistro('${encodeURIComponent(JSON.stringify({key:rkey0,cant:r0.cant,sku:sku}))}')" style="flex:1;background:#f0f0f0;border:none;border-radius:8px;padding:7px;font-size:12px;cursor:pointer;">✏️ Editar</button>
+      <button onclick="borrarRegistro('${rkey0}')" style="flex:1;background:#fdecea;border:none;border-radius:8px;padding:7px;font-size:12px;cursor:pointer;color:#c62828;">🗑 Borrar</button>
+    </div>`;
+    // Si hay más de una entrada, mostrar el desglose por caja con botones
     if(entradas.length>1){
-      html+=`<div style="margin:-6px 0 8px 12px;padding:6px 10px;background:#fffbf0;border-radius:0 0 8px 8px;border:1px solid #f0a500;border-top:none;">`;
+      html+=`<div style="margin:-4px 0 8px 0;padding:6px 10px;background:#fffbf0;border-radius:0 0 8px 8px;border:1px solid #f0a500;border-top:none;">`;
       entradas.forEach((r,i)=>{
-        html+=`<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:${i<entradas.length-1?'1px solid #f5e8c0':'none'};">
-          <span style="color:#888;">Caja ${i+1}</span>
-          <span style="font-weight:700;">${r.cant} pzas</span>
+        const rkey=Object.keys(recibidos).find(k=>recibidos[k]===r)||'';
+        html+=`<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:4px 0;border-bottom:${i<entradas.length-1?'1px solid #f5e8c0':'none'};">
+          <span style="color:#888;">Caja ${i+1}: <strong>${r.cant} pzas</strong></span>
+          <div style="display:flex;gap:4px;">
+            <button onclick="editarRegistro('${encodeURIComponent(JSON.stringify({key:rkey,cant:r.cant,sku:sku}))}')" style="background:#f0f0f0;border:none;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;">✏️</button>
+            <button onclick="borrarRegistro('${rkey}')" style="background:#fdecea;border:none;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;color:#c62828;">🗑</button>
+          </div>
         </div>`;
       });
       html+=`</div>`;
@@ -1328,6 +1339,54 @@ function renderResumenExp(){
   const wrap=document.getElementById('btn-cuadrado-wrap');
   if(wrap) wrap.style.display=todoCuadrado?'block':'none';
 }
+
+window.editarRegistro=function(dataStr){
+  const data=JSON.parse(decodeURIComponent(dataStr));
+  const overlay=document.createElement('div');
+  overlay.id='edit-rec-overlay';
+  overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML=`
+    <div style="background:#fff;border-radius:14px;padding:20px;width:100%;max-width:340px;">
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px;">✏️ Editar cantidad</div>
+      <div style="font-size:13px;color:#888;margin-bottom:14px;">${data.sku}</div>
+      <label style="font-size:11px;color:#777;font-weight:600;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px;">Nueva cantidad</label>
+      <input id="edit-rec-cant" type="number" min="0" inputmode="numeric" value="${data.cant}"
+        style="width:100%;padding:12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:28px;font-weight:700;text-align:center;margin-bottom:16px;"/>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button onclick="cerrarEditRec()" style="padding:12px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;background:#fff;">Cancelar</button>
+        <button onclick="guardarEditRec('${data.key}')" style="padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;background:#f0a500;color:#1a1a1a;">Guardar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const inp=document.getElementById('edit-rec-cant');
+  inp.focus(); inp.select();
+};
+
+window.cerrarEditRec=function(){
+  const el=document.getElementById('edit-rec-overlay');
+  if(el)el.remove();
+};
+
+window.guardarEditRec=async function(key){
+  const nuevaCant=parseInt(document.getElementById('edit-rec-cant').value);
+  if(isNaN(nuevaCant)||nuevaCant<0)return;
+  if(!recibidos[key])return;
+  recibidos[key].cant=nuevaCant;
+  await fbSet('recibidos/'+key, recibidos[key]);
+  cerrarEditRec();
+  actualizarStatsCnt();
+  renderMisPiezas();
+};
+
+window.borrarRegistro=async function(key){
+  if(!recibidos[key])return;
+  const r=recibidos[key];
+  if(!confirm(`¿Borrar el registro de "${r.sku}" (${r.cant} pzas)?`))return;
+  delete recibidos[key];
+  await fbSet('recibidos/'+key, null);
+  actualizarStatsCnt();
+  renderMisPiezas();
+};
 
 window.reclamarNuevo=async function(sku){
   const p=pedido[sku];
