@@ -185,7 +185,7 @@ select.inp{appearance:none;-webkit-appearance:none;background-image:url("data:im
   <div id="s-pedido" class="screen active">
     <div class="card">
       <div class="card-title">Cargar pedido esperado</div>
-      <p style="font-size:12px;color:#888;margin-bottom:12px;">Sube el Excel o CSV con columnas <strong>SKU</strong>, <strong>CANTIDAD</strong> y opcionalmente <strong>CVE FAMILIA</strong>.</p>
+      <p style="font-size:12px;color:#888;margin-bottom:12px;">Sube el Excel o CSV con columnas <strong>SKU</strong>, <strong>CANTIDAD</strong> y opcionalmente <strong>OBSERVACIONES</strong>.</p>
       <div class="drop-zone" onclick="document.getElementById('file-inp').click()">
         <div style="font-size:32px;">📋</div>
         <p style="font-size:13px;color:#888;margin-top:6px;">Toca para seleccionar archivo</p>
@@ -229,7 +229,7 @@ select.inp{appearance:none;-webkit-appearance:none;background-image:url("data:im
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead><tr style="background:#f5f4f0;">
             <th style="padding:8px 14px;text-align:left;font-weight:700;font-size:11px;color:#777;">SKU</th>
-            <th style="padding:8px 14px;text-align:left;font-weight:700;font-size:11px;color:#777;">CVE Familia</th>
+            <th style="padding:8px 14px;text-align:left;font-weight:700;font-size:11px;color:#777;">Observaciones</th>
             <th style="padding:8px 14px;text-align:center;font-weight:700;font-size:11px;color:#777;">Esperado</th>
             <th style="padding:8px 14px;"></th>
           </tr></thead>
@@ -278,9 +278,9 @@ select.inp{appearance:none;-webkit-appearance:none;background-image:url("data:im
   <div id="s-buscador" class="screen">
     <div class="card">
       <div class="card-title">Ubicar pieza en tarima</div>
-      <p style="font-size:12px;color:#888;margin-bottom:10px;">Busca un SKU o CVE Familia para saber en qué tarima está.</p>
+      <p style="font-size:12px;color:#888;margin-bottom:10px;">Busca un SKU o Observaciones para saber en qué tarima está.</p>
       <div class="ac-wrap">
-        <input class="inp" type="text" id="inp-buscar" placeholder="Escribe SKU o CVE Familia..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" oninput="acShow('inp-buscar','ac-bus');buscarSKU()" onkeydown="acKey(event,'inp-buscar','ac-bus')" style="font-size:17px;margin-bottom:0;"/>
+        <input class="inp" type="text" id="inp-buscar" placeholder="Escribe SKU o Observaciones..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" oninput="acShow('inp-buscar','ac-bus');buscarSKU()" onkeydown="acKey(event,'inp-buscar','ac-bus')" style="font-size:17px;margin-bottom:0;"/>
         <div class="ac-list" id="ac-bus"></div>
       </div>
     </div>
@@ -295,7 +295,7 @@ select.inp{appearance:none;-webkit-appearance:none;background-image:url("data:im
   <div id="s-exportar" class="screen">
     <div class="card">
       <div class="card-title">Exportar a Excel</div>
-      <p style="font-size:12px;color:#888;margin-bottom:12px;">Incluye SKU, CVE Familia, tarima, contador, esperado, recibido y diferencia.</p>
+      <p style="font-size:12px;color:#888;margin-bottom:12px;">Incluye SKU, Observaciones, tarima, contador, esperado, recibido y diferencia.</p>
       <div id="btn-cuadrado-wrap" style="display:none;">
         <button class="exp-btn exp-green" onclick="exportCuadrado()">✅ Todo cuadrado — Reporte final (.xlsx)</button>
       </div>
@@ -314,7 +314,7 @@ select.inp{appearance:none;-webkit-appearance:none;background-image:url("data:im
   <div id="s-historial" class="screen">
     <div class="card">
       <div class="card-title">Historial de contenedores</div>
-      <input class="inp" type="text" id="inp-hist-buscar" placeholder="Buscar por nombre, N° pedido, SKU o CVE..." oninput="renderHistorial()" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="margin-bottom:0;"/>
+      <input class="inp" type="text" id="inp-hist-buscar" placeholder="Buscar por nombre, N° pedido, SKU u observación..." oninput="renderHistorial()" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="margin-bottom:0;"/>
     </div>
     <div id="lista-historial"><div class="empty">Cargando historial...</div></div>
   </div>
@@ -587,11 +587,12 @@ window.cargarArchivo=function(e){
 async function procesarFilas(rows){
   let count=0;
   rows.forEach(row=>{
-    const sku=(row.SKU||row.sku||row.Sku||row.CODIGO||row.codigo||row.Code||'').toString().trim().toUpperCase();
-    const cant=parseInt(row.CANTIDAD||row.cantidad||row.Cantidad||row.QTY||row.qty||row.CANT||row.cant||0);
+    const sku=(row.Sku||row.SKU||row.sku||row.CODIGO||row.codigo||row.Code||'').toString().trim().toUpperCase();
+    const cant=parseInt(row.Cantidad||row.CANTIDAD||row.cantidad||row.QTY||row.qty||row.CANT||row.cant||0);
     const cat=(row.CATEGORIA||row.categoria||row.CAT||row.cat||'').toString().trim();
-    const cve=(row['CVE FAMILIA']||row['CVE_FAMILIA']||row['cve familia']||row['cve_familia']||row.CVE||row.cve||row.FAMILIA||row.familia||'').toString().trim();
-    if(sku&&cant>0){pedido[sku]={sku,cat:cat||sku,cve:cve||'',esperado:cant};count++;}
+    const cve=(row.Observacion||row.OBSERVACION||row.Observaciones||row.OBSERVACIONES||row.observaciones||row.OBS||row.obs||row['CVE FAMILIA']||row.cve||'').toString().trim();
+    const esNuevo=cve.toUpperCase().includes('NUEVO');
+    if(sku&&cant>0){pedido[sku]={sku,cat:cat||sku,cve:cve||'',esNuevo,esperado:cant};count++;}
   });
   if(count>0){await fbSet('pedido',pedido);mostrarMsg('msg-import',count+' SKUs cargados ✅','ok');renderPedido();actualizarNBadge();}
   else mostrarMsg('msg-import','No se encontraron datos. Verifica columnas SKU y CANTIDAD.','err');
@@ -602,7 +603,7 @@ window.agregarPedido=async function(){
   const c=parseInt(document.getElementById('inp-cant-ped').value);
   if(!s){mostrarMsg('msg-ped','Ingresa un SKU','err');return;}
   if(isNaN(c)||c<1){mostrarMsg('msg-ped','Ingresa cantidad válida','err');return;}
-  pedido[s]={sku:s,cat:s,cve:'',esperado:c};
+  pedido[s]={sku:s,cat:s,cve:'',esNuevo:false,esperado:c};
   document.getElementById('inp-sku-ped').value='';
   document.getElementById('inp-cant-ped').value='';
   await fbSet('pedido',pedido); renderPedido(); actualizarNBadge();
@@ -625,8 +626,9 @@ function renderPedido(){
     const p=pedido[k];
     const nota=p.nota?`<div style="font-size:10px;color:#e65100;margin-top:2px;">📝 ${p.nota}</div>`:'';
     const ajuste=p.ajuste?`<div style="font-size:10px;color:#1565c0;">Original: ${p.ajuste}</div>`:'';
-    return `<tr>
-      <td style="padding:8px 14px;font-weight:700;font-size:13px;">${p.sku}${nota}</td>
+    const nuevoBadge=p.esNuevo?`<span style="background:#ff3d00;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:5px;">🆕 NUEVO</span>`:'';
+    return `<tr style="${p.esNuevo?'background:#fff8f0;':''}">
+      <td style="padding:8px 14px;font-weight:700;font-size:13px;">${p.sku}${nuevoBadge}${nota}</td>
       <td style="padding:8px 14px;font-size:12px;color:#888;">${p.cve||'—'}</td>
       <td style="padding:8px 14px;text-align:center;font-weight:700;color:#1565c0;">${p.esperado}${ajuste}</td>
       <td style="padding:8px 14px;text-align:right;display:flex;gap:4px;justify-content:flex-end;">
@@ -847,6 +849,17 @@ window.previewSKU=function(){
     return;
   }
   if(btn){btn.disabled=false;btn.style.opacity='1';}
+  // Show NUEVO warning
+  if(p.esNuevo){
+    const reclamado=p.reclamadoPor;
+    const yoReclame=reclamado===miNombre;
+    prev.className='sku-prev warn';
+    prev.style.background='#fff3e0'; prev.style.color='#e65100'; prev.style.borderLeft='3px solid #ff3d00';
+    prev.textContent=reclamado
+      ? (yoReclame?'📦 Tú tienes esta caja — producto NUEVO':'📦 Lo tiene: '+reclamado+' — producto NUEVO')
+      : '🆕 PRODUCTO NUEVO — Ve a "Mi tarima" para reclamar la caja';
+    prev.style.display='block';
+  }
   const yaEnMiTarima=totalRecSkuTarima(v,miTarima);
   const totGlobal=totalRecSku(v);
   const totOtrasTarimas=totGlobal-yaEnMiTarima;
@@ -932,10 +945,22 @@ function renderMisPiezas(){
       else badge=`<span class="badge b-over">📈 Sobran ${totGlobal-p.esperado}</span>`;
     }
     // Fila resumen del SKU
-    let html=`<div class="rec-item" style="background:${entradas.length>1?'#fffbf0':'#fff'};border-color:${entradas.length>1?'#f0a500':'#e8e8e8'};">
+    const esNuevo=p?.esNuevo===true;
+    const reclamado=p?.reclamadoPor;
+    const yoReclame=reclamado===miNombre;
+    const nuevoBg=esNuevo?'#fff3e0':'';
+    const nuevoBorder=esNuevo?'#ff3d00':'#e8e8e8';
+    let html=`<div class="rec-item" style="background:${esNuevo?nuevoBg:entradas.length>1?'#fffbf0':'#fff'};border-color:${esNuevo?nuevoBorder:entradas.length>1?'#f0a500':'#e8e8e8'}${esNuevo?';border-width:2px':''};">
       <div style="flex:1;">
-        <div class="rec-sku">${sku}${entradas.length>1?` <span style="font-size:10px;color:#f0a500;font-weight:700;">${entradas.length} cajas</span>`:''}</div>
-        <div class="rec-cat">${p?.cve?`<span style="color:#e65100;font-weight:600;">${p.cve}</span> · `:''}${entradas[0].cat}</div>
+        <div class="rec-sku">${sku}
+          ${esNuevo?`<span style="background:#ff3d00;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px;">🆕 NUEVO</span>`:''}
+          ${entradas.length>1?` <span style="font-size:10px;color:#f0a500;font-weight:700;">${entradas.length} cajas</span>`:''}
+        </div>
+        <div class="rec-cat">${p?.cve?`<span style="color:#888;">${p.cve}</span> · `:''}${entradas[0].cat}</div>
+        ${esNuevo?`<div style="margin-top:4px;">${reclamado
+          ? `<span style="font-size:11px;font-weight:700;color:${yoReclame?'#2e7d32':'#1565c0'};">📦 ${yoReclame?'Tú tienes esta caja':'Lo tiene: '+reclamado}</span>`
+          : `<button onclick="reclamarNuevo('${sku}')" style="background:#ff3d00;color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">📦 Yo lo tengo</button>`
+        }</div>`:''}
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <div style="text-align:right;">
@@ -1006,10 +1031,11 @@ function renderComparar(){
     return `<div class="cmp-item">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div>
-          <div style="font-size:13px;font-weight:700;">${i.sku}</div>
-          ${i.p?.cve?`<div style="font-size:11px;color:#e65100;font-weight:600;margin-top:1px;">${i.p.cve}</div>`:''}
+          <div style="font-size:13px;font-weight:700;">${i.sku}${i.p?.esNuevo?'<span style="background:#ff3d00;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:5px;">🆕 NUEVO</span>':''}</div>
+          ${i.p?.cve?`<div style="font-size:11px;color:#888;margin-top:1px;">${i.p.cve}</div>`:''}
           ${i.p?.nota?`<div style="font-size:11px;color:#e65100;margin-top:1px;">📝 ${i.p.nota}</div>`:''}
           ${i.p?.ajuste?`<div style="font-size:11px;color:#aaa;margin-top:1px;">Original: ${i.p.ajuste} → Ajustado: ${i.p.esperado}</div>`:''}
+          ${i.p?.reclamadoPor?`<div style="font-size:11px;color:#2e7d32;margin-top:1px;">📦 Lo tiene: ${i.p.reclamadoPor}</div>`:''}
           ${tarimasLista?`<div style="font-size:11px;color:#888;margin-top:3px;">${tarimasLista}</div>`:''}
         </div>
         ${i.badge}
@@ -1161,7 +1187,7 @@ function buildDatos(){
 function crearHoja(datos,soloFaltantes){
   const HF={patternType:'solid',fgColor:{rgb:'1A1A1A'}};
   const HT={bold:true,color:{rgb:'FFFFFF'},sz:11};
-  const headers=['SKU','CVE FAMILIA','CATEGORÍA','TARIMAS (desglose)','CONTADORES','ESPERADO','TOTAL RECIBIDO',soloFaltantes?'FALTANTE':'DIFERENCIA','ESTADO'];
+  const headers=['SKU','OBSERVACIONES','CATEGORÍA','TARIMAS (desglose)','CONTADORES','ESPERADO','TOTAL RECIBIDO',soloFaltantes?'FALTANTE':'DIFERENCIA','ESTADO'];
   const aoa=[headers.map(h=>({v:h,t:'s',s:{font:HT,fill:HF,alignment:{horizontal:'center',vertical:'center'}}}))];
   datos.forEach(d=>{
     const val=soloFaltantes?(d.esp!==null?d.esp-(d.totRec??0):null):d.diff;
@@ -1221,7 +1247,7 @@ function crearHojaCantidadFinalizada(){
       {v:'',t:'s',s:{fill:HFtar}},
       {v:fin?'TERMINADA':'EN PROCESO',t:'s',s:{font:{bold:true,color:{rgb:fin?'2E7D32':'E65100'}},fill:HFtar}},
     ]);
-    aoa.push(['SKU','CVE FAMILIA','CAJAS','ESPERADO TOTAL','RECIBIDO EN ESTA TARIMA'].map(h=>({v:h,t:'s',s:{font:HT,fill:HF,alignment:{horizontal:'center'}}})));
+    aoa.push(['SKU','OBSERVACIONES','CAJAS','ESPERADO TOTAL','RECIBIDO EN ESTA TARIMA'].map(h=>({v:h,t:'s',s:{font:HT,fill:HF,alignment:{horizontal:'center'}}})));
     let subTotalEsp=0, subTotalRec=0;
     if(skusEnTarima.length){
       skusEnTarima.forEach(g=>{
@@ -1282,7 +1308,20 @@ function renderResumenExp(){
   if(wrap) wrap.style.display=todoCuadrado?'block':'none';
 }
 
-// ── AUTOCOMPLETE ──
+window.reclamarNuevo=async function(sku){
+  const p=pedido[sku];
+  if(!p)return;
+  if(p.reclamadoPor){
+    alert(`Esta caja ya fue reclamada por: ${p.reclamadoPor}`);
+    return;
+  }
+  if(!confirm(`¿Confirmas que tú tienes la caja de "${sku}"?\nSe avisará a los demás que tú la tienes.`))return;
+  p.reclamadoPor=miNombre;
+  p.reclamadoTs=new Date().toISOString();
+  p.reclamadoTarima=miTarima;
+  await fbSet('pedido/'+sku,p);
+  renderMisPiezas();
+};
 let acIdx = -1;
 
 window.acShow = function(inputId, listId) {
