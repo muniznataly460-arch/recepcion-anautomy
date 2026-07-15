@@ -422,16 +422,25 @@ function totalRecSku(sku){ return recDesku(sku).reduce((a,r)=>a+r.cant,0); }
 
 // ── INIT ──
 async function init(){
-  document.getElementById('loading-screen').style.display='none';
-  document.getElementById('login-screen').style.display='block';
-  fbListen('tarimas', val=>{
-    tarimas.length=0;
-    if(val) tarimas.push(...Object.values(val));
-    rellenarSelectTarimas();
-    if(rol==='supervisor'){ renderTarimasSup(); }
-  });
-  fbListen('fase', val=>{ fase=val||'conteo'; actualizarFaseBadge(); if(rol==='supervisor')actualizarNBadge(); if(rol==='contador')mostrarEstadoConteo(); });
-  fbListen('historial', val=>{ historial=val?Object.values(val).sort((a,b)=>b.fechaGuardado.localeCompare(a.fechaGuardado)):[];});
+  try{
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('login-screen').style.display='block';
+    fbListen('tarimas', val=>{
+      tarimas.length=0;
+      if(val) tarimas.push(...Object.values(val));
+      rellenarSelectTarimas();
+      if(rol==='supervisor'){ renderTarimasSup(); }
+    });
+    fbListen('fase', val=>{ fase=val||'conteo'; actualizarFaseBadge(); if(rol==='supervisor')actualizarNBadge(); if(rol==='contador')mostrarEstadoConteo(); });
+    fbListen('historial', val=>{
+      if(!val){ historial=[]; return; }
+      historial=Object.values(val).filter(h=>h&&h.fechaGuardado).sort((a,b)=>b.fechaGuardado.localeCompare(a.fechaGuardado));
+    });
+  }catch(e){
+    console.error('Error en init:',e);
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('login-screen').style.display='block';
+  }
 }
 init();
 
@@ -1484,4 +1493,23 @@ window.renderHistorial=function(){
               ${d.tarimas&&d.tarimas!=='—'?`<div style="font-size:10px;color:#888;">${d.tarimas}</div>`:''}</span>
               <span style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
                 <span style="color:#888;">${d.esp??'—'} esp · ${d.totRec??'—'} rec</span>
-                <span style="font-size:10px;font-weight:
+                <span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:8px;background:${bg};color:${col};">${d.estado}</span>
+              </span>
+            </div>`;
+          }).join('')}
+        </div>
+      </details>
+    </div>`;
+  }).join('');
+};
+
+function mostrarMsg(id,txt,tipo){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.textContent=txt;el.className='msg msg-'+(tipo==='err'?'err':'ok');el.style.display='block';
+  setTimeout(()=>el.style.display='none',tipo==='ok'?4000:5000);
+}
+window.mostrarMsg=mostrarMsg;
+</script>
+</body>
+</html>
