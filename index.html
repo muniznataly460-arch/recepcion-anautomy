@@ -587,7 +587,7 @@ window.cargarArchivo=function(e){
 async function procesarFilas(rows){
   let count=0;
   rows.forEach(row=>{
-    const sku=(row.Sku||row.SKU||row.sku||row.CODIGO||row.codigo||row.Code||'').toString().trim().toUpperCase();
+    const sku=(row.Sku||row.SKU||row.sku||row.CODIGO||row.codigo||row.Code||'').toString().trim().toUpperCase().replace(/\s+/g,'');
     const cant=parseInt(row.Cantidad||row.CANTIDAD||row.cantidad||row.QTY||row.qty||row.CANT||row.cant||0);
     const cat=(row.CATEGORIA||row.categoria||row.CAT||row.cat||'').toString().trim();
     const cve=(row.Observacion||row.OBSERVACION||row.Observaciones||row.OBSERVACIONES||row.observaciones||row.OBS||row.obs||row['CVE FAMILIA']||row.cve||'').toString().trim();
@@ -836,7 +836,7 @@ function renderMonitor(){
 
 // ── CAPTURA ──
 window.previewSKU=function(){
-  const v=document.getElementById('inp-sku-cap').value.trim().toUpperCase();
+  const v=document.getElementById('inp-sku-cap').value.trim().toUpperCase().replace(/\s+/g,'');
   const prev=document.getElementById('prev-sku-cap');
   const btn=document.querySelector('#s-captura .btn-amber');
   if(!v){prev.style.display='none';if(btn){btn.disabled=false;btn.style.opacity='1';}return;}
@@ -877,12 +877,24 @@ window.previewSKU=function(){
 
 window.registrarRecibido=async function(){
   if(fase==='finalizado'){mostrarMsg('msg-cap','El conteo ya fue finalizado','err');return;}
-  const s=document.getElementById('inp-sku-cap').value.trim().toUpperCase();
+  // Limpiar SKU — quitar espacios, convertir a mayúsculas
+  const raw=document.getElementById('inp-sku-cap').value;
+  const s=raw.trim().toUpperCase().replace(/\s+/g,'');
+  // Actualizar el campo con el SKU limpio
+  document.getElementById('inp-sku-cap').value=s;
   const c=parseInt(document.getElementById('inp-cant-cap').value);
   if(!s){mostrarMsg('msg-cap','Ingresa un SKU','err');return;}
   if(isNaN(c)||c<0){mostrarMsg('msg-cap','Ingresa cantidad válida','err');return;}
   // Validar que el SKU esté en el pedido
   if(!pedido[s]){
+    // Buscar si hay una coincidencia aproximada
+    const posible=Object.keys(pedido).find(k=>k.replace(/\s+/g,'')===s);
+    if(posible){
+      document.getElementById('inp-sku-cap').value=posible;
+      mostrarMsg('msg-cap','⚠️ SKU corregido a: '+posible,'ok');
+      previewSKU();
+      return;
+    }
     mostrarMsg('msg-cap','❌ "'+s+'" no está en el pedido. Verifica el código.','err');
     document.getElementById('inp-sku-cap').focus();
     return;
@@ -1472,23 +1484,4 @@ window.renderHistorial=function(){
               ${d.tarimas&&d.tarimas!=='—'?`<div style="font-size:10px;color:#888;">${d.tarimas}</div>`:''}</span>
               <span style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
                 <span style="color:#888;">${d.esp??'—'} esp · ${d.totRec??'—'} rec</span>
-                <span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:8px;background:${bg};color:${col};">${d.estado}</span>
-              </span>
-            </div>`;
-          }).join('')}
-        </div>
-      </details>
-    </div>`;
-  }).join('');
-};
-
-function mostrarMsg(id,txt,tipo){
-  const el=document.getElementById(id);
-  if(!el)return;
-  el.textContent=txt;el.className='msg msg-'+(tipo==='err'?'err':'ok');el.style.display='block';
-  setTimeout(()=>el.style.display='none',tipo==='ok'?4000:5000);
-}
-window.mostrarMsg=mostrarMsg;
-</script>
-</body>
-</html>
+                <span style="font-size:10px;font-weight:
