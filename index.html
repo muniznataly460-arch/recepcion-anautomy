@@ -1543,23 +1543,76 @@ window.renderHistorial=function(){
       </div>
       <details>
         <summary style="font-size:12px;color:#888;cursor:pointer;list-style:none;">▼ Ver detalle de SKUs</summary>
-        <div style="margin-top:8px;max-height:300px;overflow-y:auto;">
-          ${(h.datos||[]).map(d=>{
-            const col=d.estado==='CUADRADO'?'#2e7d32':d.estado==='FALTANTE'?'#c62828':d.estado==='SOBRANTE'?'#1565c0':d.estado==='EXTRA'?'#e65100':'#999';
-            const bg=d.estado==='CUADRADO'?'#e8f5e9':d.estado==='FALTANTE'?'#fdecea':d.estado==='SOBRANTE'?'#e3f2fd':d.estado==='EXTRA'?'#fff3e0':'#f5f5f5';
-            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f5f5f5;font-size:12px;">
-              <span><strong>${d.sku}</strong>${d.cve?' <span style="color:#e65100;font-size:10px;">'+d.cve+'</span>':''}
-              ${d.tarimas&&d.tarimas!=='—'?`<div style="font-size:10px;color:#888;">${d.tarimas}</div>`:''}</span>
-              <span style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
-                <span style="color:#888;">${d.esp??'—'} esp · ${d.totRec??'—'} rec</span>
-                <span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:8px;background:${bg};color:${col};">${d.estado}</span>
-              </span>
-            </div>`;
-          }).join('')}
+        <div style="margin-top:8px;">
+          <!-- Tabs por SKU / por Tarima -->
+          <div style="display:flex;gap:6px;margin-bottom:8px;">
+            <button onclick="histTab('${h.id}','sku',this)" id="htab-sku-${h.id}" style="flex:1;padding:7px;border:1.5px solid #1a1a1a;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;background:#1a1a1a;color:#fff;">Por SKU</button>
+            <button onclick="histTab('${h.id}','tarima',this)" id="htab-tar-${h.id}" style="flex:1;padding:7px;border:1.5px solid #ddd;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#888;">Por Tarima</button>
+          </div>
+          <!-- Vista Por SKU -->
+          <div id="hview-sku-${h.id}" style="max-height:300px;overflow-y:auto;">
+            ${(h.datos||[]).map(d=>{
+              const col=d.estado==='CUADRADO'?'#2e7d32':d.estado==='FALTANTE'?'#c62828':d.estado==='SOBRANTE'?'#1565c0':d.estado==='EXTRA'?'#e65100':'#999';
+              const bg=d.estado==='CUADRADO'?'#e8f5e9':d.estado==='FALTANTE'?'#fdecea':d.estado==='SOBRANTE'?'#e3f2fd':d.estado==='EXTRA'?'#fff3e0':'#f5f5f5';
+              return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f5f5f5;font-size:12px;">
+                <span><strong>${d.sku}</strong>${d.cve?' <span style="color:#e65100;font-size:10px;">'+d.cve+'</span>':''}
+                ${d.tarimas&&d.tarimas!=='—'?`<div style="font-size:10px;color:#888;">${d.tarimas}</div>`:''}</span>
+                <span style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+                  <span style="color:#888;">${d.esp??'—'} esp · ${d.totRec??'—'} rec</span>
+                  <span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:8px;background:${bg};color:${col};">${d.estado}</span>
+                </span>
+              </div>`;
+            }).join('')}
+          </div>
+          <!-- Vista Por Tarima -->
+          <div id="hview-tar-${h.id}" style="display:none;max-height:300px;overflow-y:auto;">
+            ${(h.tarimas||[]).map(t=>{
+              // Filtrar SKUs que estuvieron en esta tarima
+              const skusEnTarima=(h.datos||[]).filter(d=>d.tarimas&&d.tarimas.includes(t.nombre));
+              const totalPzas=skusEnTarima.reduce((a,d)=>a+(d.totRec||0),0);
+              return `<div style="margin-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#1a1a1a;border-radius:8px 8px 0 0;">
+                  <span style="color:#f0a500;font-weight:700;font-size:12px;">${t.nombre}${t.terminada?' ✅':''}</span>
+                  <span style="color:#888;font-size:11px;">${t.contador||'Sin asignar'} · ${skusEnTarima.length} SKUs · ${totalPzas} pzas</span>
+                </div>
+                ${skusEnTarima.length?skusEnTarima.map(d=>{
+                  const col=d.estado==='CUADRADO'?'#2e7d32':d.estado==='FALTANTE'?'#c62828':d.estado==='SOBRANTE'?'#1565c0':'#e65100';
+                  // Extraer cantidad específica de esta tarima del string de tarimas
+                  const matchT=d.tarimas?d.tarimas.split('|').find(s=>s.trim().startsWith(t.nombre)):null;
+                  const cantT=matchT?matchT.replace(t.nombre+':','').replace('pz','').trim():'—';
+                  return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border-bottom:1px solid #f0f0f0;font-size:12px;background:#fff;">
+                    <span><strong>${d.sku}</strong>${d.cve?' <span style="color:#e65100;font-size:10px;"> '+d.cve+'</span>':''}</span>
+                    <span style="display:flex;gap:8px;align-items:center;">
+                      <span style="color:#888;">${cantT} pzas</span>
+                      <span style="font-size:10px;font-weight:700;color:${col};">${d.estado}</span>
+                    </span>
+                  </div>`;
+                }).join('')
+                :`<div style="padding:8px 10px;font-size:12px;color:#bbb;background:#fff;">Sin registros</div>`}
+              </div>`;
+            }).join('')}
+          </div>
         </div>
       </details>
     </div>`;
   }).join('');
+};
+
+window.histTab=function(hid, vista, btn){
+  const skuView=document.getElementById('hview-sku-'+hid);
+  const tarView=document.getElementById('hview-tar-'+hid);
+  const btnSku=document.getElementById('htab-sku-'+hid);
+  const btnTar=document.getElementById('htab-tar-'+hid);
+  if(!skuView||!tarView)return;
+  if(vista==='sku'){
+    skuView.style.display='block'; tarView.style.display='none';
+    btnSku.style.background='#1a1a1a'; btnSku.style.color='#fff'; btnSku.style.borderColor='#1a1a1a';
+    btnTar.style.background='#fff'; btnTar.style.color='#888'; btnTar.style.borderColor='#ddd';
+  } else {
+    skuView.style.display='none'; tarView.style.display='block';
+    btnTar.style.background='#1a1a1a'; btnTar.style.color='#fff'; btnTar.style.borderColor='#1a1a1a';
+    btnSku.style.background='#fff'; btnSku.style.color='#888'; btnSku.style.borderColor='#ddd';
+  }
 };
 
 function mostrarMsg(id,txt,tipo){
