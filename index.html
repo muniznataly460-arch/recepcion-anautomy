@@ -1541,6 +1541,9 @@ window.renderHistorial=function(){
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;">
         ${(h.tarimas||[]).map(t=>`<span class="tarima-badge" style="${t.terminada?'background:#2e7d32;':''}">${t.nombre}${t.terminada?' ✅':''}</span>`).join('')}
       </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <button onclick="exportHistorial('${h.id}')" style="flex:1;padding:10px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;background:#2e7d32;color:#fff;">📥 Descargar Excel</button>
+      </div>
       <details>
         <summary style="font-size:12px;color:#888;cursor:pointer;list-style:none;">▼ Ver detalle de SKUs</summary>
         <div style="margin-top:8px;">
@@ -1596,6 +1599,83 @@ window.renderHistorial=function(){
       </details>
     </div>`;
   }).join('');
+};
+
+window.exportHistorial=function(hid){
+  const h=historial.find(x=>x.id===hid);
+  if(!h){alert('No se encontró el pedido.');return;}
+  const HF={patternType:'solid',fgColor:{rgb:'1A1A1A'}};
+  const HT={bold:true,color:{rgb:'FFFFFF'},sz:11};
+  const COLS={CUADRADO:{fgColor:{rgb:'E8F5E9'}},FALTANTE:{fgColor:{rgb:'FDECEA'}},SOBRANTE:{fgColor:{rgb:'E3F2FD'}},EXTRA:{fgColor:{rgb:'FFF3E0'}},PENDIENTE:{fgColor:{rgb:'F5F5F5'}}};
+  const FUES={CUADRADO:{bold:true,color:{rgb:'2E7D32'}},FALTANTE:{bold:true,color:{rgb:'C62828'}},SOBRANTE:{bold:true,color:{rgb:'1565C0'}},EXTRA:{bold:true,color:{rgb:'E65100'}},PENDIENTE:{bold:true,color:{rgb:'999999'}}};
+
+  // ── Hoja 1: Por SKU ──
+  const headers=['SKU','OBSERVACIONES','TARIMAS','CONTADORES','ESPERADO','RECIBIDO','DIFERENCIA','ESTADO'];
+  const aoa1=[headers.map(h2=>({v:h2,t:'s',s:{font:HT,fill:HF,alignment:{horizontal:'center'}}}))];
+  (h.datos||[]).forEach(d=>{
+    const diff=d.esp!==null&&d.totRec!==null?d.totRec-d.esp:null;
+    aoa1.push([
+      cc(d.sku,true),cc(d.cve||'—'),cc(d.tarimas||'—'),cc(d.contadores||'—'),
+      cc(d.esp??'—'),cc(d.totRec??'—'),cc(diff??'—'),
+      cc(d.estado,false,COLS[d.estado]||{},FUES[d.estado]||{})
+    ]);
+  });
+  const ws1=XLSX.utils.aoa_to_sheet(aoa1);
+  ws1['!cols']=[{wch:18},{wch:14},{wch:28},{wch:20},{wch:12},{wch:12},{wch:13},{wch:14}];
+
+  // ── Hoja 2: Por Tarima ──
+  const aoa2=[];
+  aoa2.push([{v:'REPORTE POR TARIMA — '+h.nombre,t:'s',s:{font:{bold:true,sz:13}}}]);
+  aoa2.push([{v:'Fecha: '+new Date(h.fecha+'T12:00:00').toLocaleDateString('es-MX'),t:'s',s:{font:{sz:10,color:{rgb:'888888'}}}}]);
+  aoa2.push([]);
+  (h.tarimas||[]).forEach(t=>{
+    const skusT=(h.datos||[]).filter(d=>d.tarimas&&d.tarimas.includes(t.nombre));
+    const totalPzas=skusT.reduce((a,d)=>a+(d.totRec||0),0);
+    aoa2.push([
+      {v:t.nombre+(t.terminada?' ✅':''),t:'s',s:{font:{bold:true,color:{rgb:t.terminada?'2E7D32':'E65100'},sz:11},fill:HF}},
+      {v:'Contador: '+(t.contador||'Sin asignar'),t:'s',s:{font:{italic:true,color:{rgb:'AAAAAA'}},fill:HF}},
+      {v:skusT.length+' SKUs · '+totalPzas+' pzas',t:'s',s:{font:{bold:true,color:{rgb:'F0A500'}},fill:HF}},
+    ]);
+    if(skusT.length){
+      aoa2.push(['SKU','OBSERVACIONES','PZAS EN TARIMA','ESTADO'].map(h3=>({v:h3,t:'s',s:{font:HT,fill:HF}})));
+      skusT.forEach(d=>{
+        const matchT=d.tarimas?d.tarimas.split('|').find(s=>s.trim().startsWith(t.nombre)):null;
+        const cantT=matchT?parseInt(matchT.replace(t.nombre+':','').replace('pz','').trim())||'—':'—';
+        aoa2.push([cc(d.sku,true),cc(d.cve||'—'),cc(cantT),cc(d.estado,false,COLS[d.estado]||{},FUES[d.estado]||{})]);
+      });
+    } else {
+      aoa2.push([{v:'Sin registros',t:'s',s:{font:{italic:true,color:{rgb:'AAAAAA'}}}}]);
+    }
+    aoa2.push([]);
+  });
+  const ws2=XLSX.utils.aoa_to_sheet(aoa2);
+  ws2['!cols']=[{wch:20},{wch:18},{wch:20},{wch:14}];
+  ws2['!merges']=[{s:{r:0,c:0},e:{r:0,c:3}},{s:{r:1,c:0},e:{r:1,c:3}}];
+
+  // ── Hoja 3: Resumen ──
+  const cnt={CUADRADO:0,FALTANTE:0,SOBRANTE:0,EXTRA:0,PENDIENTE:0};
+  (h.datos||[]).forEach(d=>{if(cnt[d.estado]!==undefined)cnt[d.estado]++;});
+  const pct=h.totalSkus?Math.round(h.cuadrados/h.totalSkus*100):0;
+  const aoa3=[
+    [{v:'RESUMEN — '+h.nombre,t:'s',s:{font:{bold:true,sz:14}}}],
+    [{v:'Fecha: '+new Date(h.fecha+'T12:00:00').toLocaleDateString('es-MX')+' · Supervisor: '+(h.supervisor||'—'),t:'s',s:{font:{sz:10,color:{rgb:'888888'}}}}],
+    [{v:pct+'% cuadrado',t:'s',s:{font:{bold:true,sz:13,color:{rgb:pct===100?'2E7D32':pct>=70?'E65100':'C62828'}}}}],
+    [],
+    [{v:'ESTADO',t:'s',s:{font:HT,fill:HF}},{v:'CANTIDAD',t:'s',s:{font:HT,fill:HF}}],
+    ...Object.entries(cnt).map(([k,v])=>[cc(k,false,COLS[k]||{},FUES[k]||{}),cc(v,true)]),
+    [],
+    [cc('TOTAL SKUs',true),cc(h.totalSkus,true)],
+  ];
+  const ws3=XLSX.utils.aoa_to_sheet(aoa3);
+  ws3['!cols']=[{wch:20},{wch:14}];
+  ws3['!merges']=[{s:{r:0,c:0},e:{r:0,c:1}},{s:{r:1,c:0},e:{r:1,c:1}},{s:{r:2,c:0},e:{r:2,c:1}}];
+
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws1,'Por SKU');
+  XLSX.utils.book_append_sheet(wb,ws2,'Por Tarima');
+  XLSX.utils.book_append_sheet(wb,ws3,'Resumen');
+  const nombre=h.nombre.replace(/[^a-zA-Z0-9\-_]/g,'_');
+  XLSX.writeFile(wb,'historial_'+nombre+'_'+h.fecha+'.xlsx');
 };
 
 window.histTab=function(hid, vista, btn){
